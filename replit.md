@@ -15,6 +15,13 @@ A comprehensive, AI-powered day trading application that integrates with Interac
 - Watchlist management
 
 ## Recent Updates (Latest Session)
+- **✅ IB Gateway Integration & Configuration**
+  - Added port selection dropdown: TWS Paper (7497), TWS Live (7496), IB Gateway (4002)
+  - Implemented Read-Only API detection with automatic warning banner
+  - Added comprehensive IB Gateway Setup Guide in sidebar with recommended settings
+  - Configuration guidance matches user's Gateway settings screenshot
+  - Read-only mode flag properly resets on connect/disconnect
+  - Updated .env.example and documentation with Gateway port configuration
 - **✅ Complete Professional UI Redesign - IBKR Interface**
   - Implemented three-panel layout matching Interactive Brokers professional interface
   - Left panel: Enhanced watchlist with real-time prices, bid/ask spreads, % changes
