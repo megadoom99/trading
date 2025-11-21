@@ -556,43 +556,7 @@ def render_orders():
         else:
             st.error("Failed to cancel order")
 
-def render_watchlist():
-    st.subheader("👀 Watchlist")
-    
-    col1, col2 = st.columns([3, 1])
-    
-    with col1:
-        new_symbol = st.text_input("Add Symbol", key="new_watchlist_symbol")
-    
-    with col2:
-        st.write("")
-        st.write("")
-        if st.button("➕ Add", use_container_width=True):
-            if new_symbol and new_symbol.upper() not in st.session_state.watchlist:
-                st.session_state.watchlist.append(new_symbol.upper())
-                st.session_state.trading_agent.add_to_watchlist(new_symbol.upper())
-                st.success(f"Added {new_symbol.upper()}")
-                st.rerun()
-    
-    if st.session_state.watchlist:
-        for symbol in st.session_state.watchlist:
-            col_a, col_b, col_c = st.columns([2, 3, 1])
-            
-            with col_a:
-                st.write(f"**{symbol}**")
-            
-            with col_b:
-                if st.session_state.ibkr.connected:
-                    market_data = st.session_state.ibkr.get_market_data(symbol)
-                    if market_data:
-                        price = market_data.get('last', 0)
-                        st.write(f"${price:.2f}")
-            
-            with col_c:
-                if st.button("🗑️", key=f"remove_{symbol}"):
-                    st.session_state.watchlist.remove(symbol)
-                    st.session_state.trading_agent.remove_from_watchlist(symbol)
-                    st.rerun()
+# Old render_watchlist() function removed - now using render_watchlist_panel() in three-panel layout
 
 def render_ai_chat():
     st.subheader("💬 AI Chat Interface")
@@ -797,14 +761,563 @@ Provide:
                 else:
                     st.warning("Need more trades for meaningful AI analysis")
 
+def render_watchlist_panel():
+    """Enhanced watchlist panel with bid/ask and changes"""
+    st.markdown("### Watchlist")
+    
+    # Add symbol input - simplified single-column layout
+    new_symbol = st.text_input("Add Symbol", placeholder="Enter symbol (e.g., AAPL)", key="wl_symbol")
+    if st.button("➕ Add to Watchlist", use_container_width=True, key="wl_add"):
+        if new_symbol and new_symbol.upper() not in st.session_state.watchlist:
+            st.session_state.watchlist.append(new_symbol.upper())
+            if st.session_state.trading_agent:
+                st.session_state.trading_agent.add_to_watchlist(new_symbol.upper())
+            st.rerun()
+        elif new_symbol.upper() in st.session_state.watchlist:
+            st.warning(f"{new_symbol.upper()} already in watchlist")
+    
+    st.markdown("---")
+    
+    # Display watchlist symbols
+    if st.session_state.watchlist and st.session_state.ibkr and st.session_state.ibkr.connected:
+        for symbol in st.session_state.watchlist:
+            market_data = st.session_state.ibkr.get_market_data(symbol)
+            if market_data:
+                price = market_data.get('last', 0)
+                prev_close = market_data.get('close', price)
+                change = price - prev_close if prev_close else 0
+                change_pct = (change / prev_close * 100) if prev_close else 0
+                
+                # Symbol row
+                col_sym, col_rem = st.columns([5, 1])
+                with col_sym:
+                    st.markdown(f"**{symbol}**")
+                with col_rem:
+                    if st.button("×", key=f"rem_{symbol}"):
+                        st.session_state.watchlist.remove(symbol)
+                        if st.session_state.trading_agent:
+                            st.session_state.trading_agent.remove_from_watchlist(symbol)
+                        st.rerun()
+                
+                # Price and change
+                color = "#00ff00" if change >= 0 else "#ff4444"
+                st.markdown(f"<div style='font-family: Monaco, monospace; font-size: 1.1rem;'>${price:.2f}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='color: {color}; font-family: Monaco, monospace; font-size: 0.9rem;'>{change:+.2f} ({change_pct:+.2f}%)</div>", unsafe_allow_html=True)
+                st.markdown("---")
+    else:
+        st.info("Connect to IBKR to view prices")
+
+def render_charts():
+    """Professional charts view"""
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    
+    st.markdown("### Charts")
+    
+    if not st.session_state.ibkr or not st.session_state.ibkr.connected:
+        st.warning("Connect to IBKR to view charts")
+        return
+    
+    # Symbol selector
+    symbol = st.selectbox("Select Symbol", st.session_state.watchlist if st.session_state.watchlist else ['AAPL'])
+    
+    # Time period selector
+    period_map = {
+        '1D': ('1 D', '5 mins'),
+        '5D': ('5 D', '15 mins'),
+        '1M': ('1 M', '1 hour'),
+        '3M': ('3 M', '1 day'),
+        '1Y': ('1 Y', '1 day')
+    }
+    
+    selected_period = st.radio("Period", list(period_map.keys()), horizontal=True, label_visibility="collapsed")
+    duration, bar_size = period_map[selected_period]
+    
+    # Get current price
+    market_data = st.session_state.ibkr.get_market_data(symbol)
+    if market_data:
+        price = market_data.get('last', 0)
+        prev_close = market_data.get('close', price)
+        change = price - prev_close if prev_close else 0
+        change_pct = (change / prev_close * 100) if prev_close else 0
+        
+        col_price, col_change = st.columns(2)
+        with col_price:
+            st.metric(label=symbol, value=f"${price:.2f}")
+        with col_change:
+            st.metric(label="Change", value=f"${change:+.2f}", delta=f"{change_pct:+.2f}%")
+    
+    # Get historical data
+    try:
+        df = st.session_state.ibkr.get_historical_data(symbol, duration=duration, bar_size=bar_size)
+    except Exception as e:
+        st.error(f"Error fetching historical data: {e}")
+        return
+    
+    if df is not None and len(df) > 0:
+        # Create candlestick chart with volume
+        fig = make_subplots(
+            rows=2, cols=1,
+            shared_xaxes=True,
+            vertical_spacing=0.05,
+            row_heights=[0.7, 0.3],
+            specs=[[{"type": "candlestick"}], [{"type": "bar"}]]
+        )
+        
+        # Candlestick
+        fig.add_trace(
+            go.Candlestick(
+                x=df['date'],
+                open=df['open'],
+                high=df['high'],
+                low=df['low'],
+                close=df['close'],
+                name=symbol,
+                increasing_line_color='#00ff00',
+                decreasing_line_color='#ff4444'
+            ),
+            row=1, col=1
+        )
+        
+        # Volume bars
+        colors = ['#00ff00' if close >= open else '#ff4444' 
+                 for close, open in zip(df['close'], df['open'])]
+        
+        fig.add_trace(
+            go.Bar(
+                x=df['date'],
+                y=df['volume'],
+                name='Volume',
+                marker_color=colors,
+                showlegend=False
+            ),
+            row=2, col=1
+        )
+        
+        # Update layout for IBKR dark theme
+        fig.update_layout(
+            template='plotly_dark',
+            height=600,
+            margin=dict(l=0, r=0, t=30, b=0),
+            xaxis_rangeslider_visible=False,
+            paper_bgcolor='#0a0a0a',
+            plot_bgcolor='#1a1a1a',
+            font=dict(color='#e0e0e0'),
+            hovermode='x unified'
+        )
+        
+        # Update axes
+        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#2a2a2a')
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#2a2a2a')
+        
+        # Update y-axis labels
+        fig.update_yaxes(title_text="Price", row=1, col=1)
+        fig.update_yaxes(title_text="Volume", row=2, col=1)
+        
+        # Display the chart
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.warning(f"No historical data available for {symbol}. Try connecting to IBKR or check market hours.")
+
+def render_orders_table():
+    """Styled orders table"""
+    st.markdown("### Orders")
+    
+    if not st.session_state.ibkr or not st.session_state.ibkr.connected:
+        st.warning("Connect to IBKR to view orders")
+        return
+    
+    orders = st.session_state.ibkr.get_orders()
+    
+    if not orders:
+        st.info("No orders")
+        return
+    
+    # Create DataFrame with all order details
+    df = pd.DataFrame(orders)
+    
+    # Style the dataframe
+    st.dataframe(
+        df,
+        use_container_width=True,
+        height=400
+    )
+    
+    # Order cancellation
+    st.markdown("---")
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        order_id = st.number_input("Order ID to Cancel", min_value=1, step=1)
+    with col2:
+        st.write("")
+        st.write("")
+        if st.button("Cancel", type="secondary"):
+            if st.session_state.ibkr.cancel_order(int(order_id)):
+                st.success(f"Cancelled order {order_id}")
+                st.rerun()
+
+def render_balances_view():
+    """Account balances and performance"""
+    st.markdown("### Balances")
+    
+    if not st.session_state.ibkr or not st.session_state.ibkr.connected:
+        st.warning("Connect to IBKR to view balances")
+        return
+    
+    # Account summary
+    account = st.session_state.ibkr.get_account_summary()
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Net Liquidation", f"${account['total_equity']:,.2f}")
+        st.metric("Cash", f"${account['available_cash']:,.2f}")
+        st.metric("Buying Power", f"${account['buying_power']:,.2f}")
+    
+    with col2:
+        st.metric("Gross Position Value", f"${account['gross_position_value']:,.2f}")
+        st.metric("Maintenance Margin", f"${account['maintenance_margin']:,.2f}")
+        st.metric("Excess Liquidity", f"${account['excess_liquidity']:,.2f}")
+    
+    st.markdown("---")
+    
+    # Positions table
+    st.markdown("#### Positions")
+    positions = st.session_state.ibkr.get_positions()
+    
+    if positions:
+        df = pd.DataFrame(positions)
+        st.dataframe(df, use_container_width=True, height=300)
+    else:
+        st.info("No open positions")
+
+def render_news_feed():
+    """Market news feed"""
+    st.markdown("### Market News")
+    
+    if not st.session_state.market_data_mgr or not st.session_state.market_data_mgr.finnhub_client:
+        st.warning("Finnhub API key required for news feed. Add it in Settings.")
+        return
+    
+    # Get news for watchlist symbols
+    if st.session_state.watchlist:
+        for symbol in st.session_state.watchlist[:3]:  # Limit to first 3 symbols
+            news = st.session_state.market_data_mgr.get_news(symbol, limit=5)
+            
+            if news:
+                st.markdown(f"#### {symbol} News")
+                for item in news:
+                    st.markdown(f"**{item.get('headline', 'No headline')}**")
+                    st.caption(f"{item.get('datetime', 'No date')} - {item.get('source', 'Unknown source')}")
+                    if item.get('url'):
+                        st.markdown(f"[Read more]({item['url']})")
+                    st.markdown("---")
+    else:
+        st.info("Add symbols to watchlist to see relevant news")
+
+def render_order_panel():
+    """Right panel order entry"""
+    st.markdown("### Order Entry")
+    
+    if not st.session_state.ibkr or not st.session_state.ibkr.connected:
+        st.warning("Connect to IBKR")
+        return
+    
+    # Symbol selector from watchlist
+    if st.session_state.watchlist:
+        symbol = st.selectbox("Symbol", st.session_state.watchlist, key="order_symbol")
+    else:
+        symbol = st.text_input("Symbol", value="AAPL", key="order_symbol_text")
+    
+    # Display current price
+    if symbol:
+        market_data = st.session_state.ibkr.get_market_data(symbol)
+        if market_data:
+            price = market_data.get('last', 0)
+            st.markdown(f"<div style='font-family: Monaco, monospace; font-size: 1.3rem; margin-bottom: 10px;'>{symbol}: ${price:.2f}</div>", unsafe_allow_html=True)
+    
+    # Order details
+    action = st.selectbox("Action", ["BUY", "SELL", "SELL SHORT", "BUY TO COVER"], key="order_action")
+    quantity = st.number_input("Quantity", min_value=1, value=100, key="order_qty")
+    order_type = st.selectbox("Type", ["MKT", "LMT", "STP", "STP LMT"], key="order_type_sel")
+    
+    limit_price = None
+    stop_price = None
+    
+    if order_type in ["LMT", "STP LMT"]:
+        limit_price = st.number_input("Limit Price", min_value=0.01, value=100.0, step=0.01, key="order_limit")
+    
+    if order_type in ["STP", "STP LMT"]:
+        stop_price = st.number_input("Stop Price", min_value=0.01, value=95.0, step=0.01, key="order_stop")
+    
+    tif = st.selectbox("TIF", ["DAY", "GTC"], key="order_tif")
+    
+    # Buy/Sell buttons
+    col_buy, col_sell = st.columns(2)
+    
+    with col_buy:
+        if st.button("Buy", type="primary" if action == "BUY" else "secondary", use_container_width=True):
+            result = st.session_state.ibkr.place_order(
+                symbol=symbol,
+                action="BUY",
+                quantity=quantity,
+                order_type=order_type,
+                limit_price=limit_price,
+                stop_price=stop_price,
+                tif=tif
+            )
+            if result:
+                st.success(f"Buy order placed")
+                # Log trade
+                if st.session_state.db_mgr:
+                    try:
+                        entry_price = price if market_data else 0
+                        st.session_state.db_mgr.log_trade(
+                            symbol=symbol,
+                            action="BUY",
+                            quantity=quantity,
+                            entry_price=entry_price,
+                            order_type=order_type,
+                            agent_generated=False,
+                            signal_confidence=None,
+                            reasoning="Manual trade",
+                            user_id=st.session_state.user['id'] if st.session_state.user else None
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to log trade: {e}")
+                st.rerun()
+    
+    with col_sell:
+        if st.button("Sell", type="primary" if action == "SELL" else "secondary", use_container_width=True, key="sell_btn"):
+            result = st.session_state.ibkr.place_order(
+                symbol=symbol,
+                action="SELL",
+                quantity=quantity,
+                order_type=order_type,
+                limit_price=limit_price,
+                stop_price=stop_price,
+                tif=tif
+            )
+            if result:
+                st.success(f"Sell order placed")
+                # Log trade
+                if st.session_state.db_mgr:
+                    try:
+                        entry_price = price if market_data else 0
+                        st.session_state.db_mgr.log_trade(
+                            symbol=symbol,
+                            action="SELL",
+                            quantity=quantity,
+                            entry_price=entry_price,
+                            order_type=order_type,
+                            agent_generated=False,
+                            signal_confidence=None,
+                            reasoning="Manual trade",
+                            user_id=st.session_state.user['id'] if st.session_state.user else None
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to log trade: {e}")
+                st.rerun()
+
 def main():
     st.markdown("""
         <style>
+        /* IBKR Professional Dark Theme */
+        
+        /* Main app background */
         .stApp {
-            background-color: #262730;
+            background-color: #0a0a0a;
+            color: #e0e0e0;
         }
-        .css-1d391kg {
-            background-color: #262730;
+        
+        /* Sidebar styling */
+        [data-testid="stSidebar"] {
+            background-color: #1a1a1a;
+            border-right: 1px solid #2a2a2a;
+        }
+        
+        /* Headers */
+        h1, h2, h3, h4, h5, h6 {
+            color: #e0e0e0 !important;
+            font-weight: 500 !important;
+        }
+        
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            color: #808080;
+            background-color: transparent;
+            border: none;
+            padding: 12px 24px;
+        }
+        
+        .stTabs [aria-selected="true"] {
+            color: #0080ff !important;
+            border-bottom: 2px solid #0080ff;
+        }
+        
+        /* Data tables */
+        .dataframe {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+        }
+        
+        .dataframe thead tr th {
+            background-color: #2a2a2a !important;
+            color: #a0a0a0 !important;
+            font-weight: 600 !important;
+            font-size: 0.85rem !important;
+            padding: 12px 8px !important;
+            border-bottom: 1px solid #3a3a3a !important;
+        }
+        
+        .dataframe tbody tr {
+            background-color: #1a1a1a !important;
+            border-bottom: 1px solid #2a2a2a !important;
+        }
+        
+        .dataframe tbody tr:hover {
+            background-color: #252525 !important;
+        }
+        
+        .dataframe tbody tr td {
+            color: #e0e0e0 !important;
+            padding: 10px 8px !important;
+            font-size: 0.9rem !important;
+        }
+        
+        /* Monospace for numbers */
+        .dataframe tbody tr td:nth-child(n+3) {
+            font-family: 'Monaco', 'Courier New', monospace !important;
+            text-align: right !important;
+        }
+        
+        /* Buttons */
+        .stButton > button {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #3a3a3a;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .stButton > button:hover {
+            background-color: #3a3a3a;
+            border-color: #4a4a4a;
+        }
+        
+        /* Primary buttons (Buy) */
+        .stButton > button[kind="primary"] {
+            background-color: #0080ff;
+            color: white;
+            border: none;
+        }
+        
+        .stButton > button[kind="primary"]:hover {
+            background-color: #0099ff;
+        }
+        
+        /* Input fields */
+        .stTextInput input, .stNumberInput input, .stSelectbox select {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            border: 1px solid #3a3a3a !important;
+            border-radius: 4px !important;
+        }
+        
+        .stTextInput input:focus, .stNumberInput input:focus, .stSelectbox select:focus {
+            border-color: #0080ff !important;
+            box-shadow: 0 0 0 1px #0080ff !important;
+        }
+        
+        /* Metrics */
+        [data-testid="stMetricValue"] {
+            color: #e0e0e0 !important;
+            font-size: 1.8rem !important;
+            font-weight: 600 !important;
+            font-family: 'Monaco', 'Courier New', monospace !important;
+        }
+        
+        [data-testid="stMetricLabel"] {
+            color: #a0a0a0 !important;
+            font-size: 0.85rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+        }
+        
+        [data-testid="stMetricDelta"] {
+            font-family: 'Monaco', 'Courier New', monospace !important;
+        }
+        
+        /* Expanders */
+        .streamlit-expanderHeader {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            border: 1px solid #2a2a2a !important;
+        }
+        
+        .streamlit-expanderContent {
+            background-color: #1a1a1a !important;
+            border: 1px solid #2a2a2a !important;
+        }
+        
+        /* Info/Warning/Error boxes */
+        .stAlert {
+            background-color: #1a1a1a !important;
+            border-left-width: 4px !important;
+        }
+        
+        /* Dividers */
+        hr {
+            border-color: #2a2a2a !important;
+        }
+        
+        /* Remove Streamlit branding */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        
+        /* Radio buttons */
+        .stRadio > label {
+            color: #e0e0e0 !important;
+        }
+        
+        /* Checkbox */
+        .stCheckbox > label {
+            color: #e0e0e0 !important;
+        }
+        
+        /* Text color for various elements */
+        p, span, div {
+            color: #e0e0e0;
+        }
+        
+        /* Caption text */
+        .caption {
+            color: #808080 !important;
+            font-size: 0.8rem !important;
+        }
+        
+        /* Success/Positive values - Green */
+        .positive {
+            color: #00ff00 !important;
+        }
+        
+        /* Error/Negative values - Red */
+        .negative {
+            color: #ff4444 !important;
+        }
+        
+        /* Professional number formatting */
+        .price-display {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 1.1rem;
+            font-weight: 500;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -823,45 +1336,51 @@ def main():
     
     initialize_components()
     
-    st.title("📈 IBKR AI Day Trading Agent")
+    st.title("📈 Interactive Brokers Trading Platform")
     
     st_autorefresh(interval=5000, key="data_refresh")
     
     render_sidebar()
     
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "📊 Dashboard",
-        "📝 Manual Trading",
-        "📋 Orders",
-        "👀 Watchlist",
-        "💬 AI Chat",
-        "📚 Trade Journal"
-    ])
+    # Three-panel IBKR-style layout: Watchlist | Main Content | Order Entry
+    col_left, col_center, col_right = st.columns([2, 6, 3])
     
-    with tab1:
-        render_account_summary()
-        st.markdown("---")
-        render_portfolio()
+    # LEFT PANEL: Watchlist
+    with col_left:
+        render_watchlist_panel()
     
-    with tab2:
-        render_manual_trading()
+    # CENTER PANEL: Main tabs
+    with col_center:
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
+            "📊 Charts",
+            "📋 Orders",
+            "💰 Balances",
+            "📰 News",
+            "📚 Trade Journal"
+        ])
+        
+        with tab1:
+            render_charts()
+        
+        with tab2:
+            render_orders_table()
+        
+        with tab3:
+            render_balances_view()
+        
+        with tab4:
+            render_news_feed()
+        
+        with tab5:
+            render_trade_journal()
     
-    with tab3:
-        render_orders()
-    
-    with tab4:
-        render_watchlist()
-    
-    with tab5:
-        render_ai_chat()
-    
-    with tab6:
-        render_trade_journal()
+    # RIGHT PANEL: Order Entry
+    with col_right:
+        render_order_panel()
     
     if st.session_state.trading_agent.execution_mode == 'manual_approval':
         render_pre_trade_modal()
     
-    st.markdown("---")
     st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 if __name__ == "__main__":
