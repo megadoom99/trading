@@ -15,6 +15,13 @@ A comprehensive, AI-powered day trading application that integrates with Interac
 - Watchlist management
 
 ## Recent Updates (Latest Session)
+- **✅ Single-User Authentication Mode**
+  - Converted from multi-user to single-user mode for personal trading use
+  - Admin credentials configured via environment variables (ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_PASSWORD)
+  - Removed signup page UI - now shows only login form
+  - Admin user auto-created on application startup with bcrypt password hashing
+  - Simplified authentication flow for single-user deployment
+  - Updated DEPLOYMENT.md with credential configuration instructions
 - **✅ IB Gateway Integration & Configuration**
   - Added port selection dropdown: TWS Paper (7497), TWS Live (7496), IB Gateway (4002)
   - Implemented Read-Only API detection with automatic warning banner
@@ -43,7 +50,8 @@ A comprehensive, AI-powered day trading application that integrates with Interac
 ## Architecture
 
 ### Core Modules
-- **config.py**: Centralized configuration with environment variables
+- **config.py**: Centralized configuration with environment variables including admin credentials
+- **auth_manager.py**: Single-user authentication with auto-admin creation and bcrypt password hashing
 - **ibkr_manager.py**: IBKR API connection, market data, order execution
 - **openrouter_client.py**: Multi-model AI client with automatic fallbacks
 - **ai_trading_agent.py**: Autonomous trading logic and signal generation
@@ -87,15 +95,25 @@ A comprehensive, AI-powered day trading application that integrates with Interac
    - API access enabled in account settings
 
 ### Environment Configuration
-Create a `.env` file with your API keys:
+Create a `.env` file with your credentials and API keys:
 ```
+# Admin Login Credentials (Single-User Mode)
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=admin@trading.local
+ADMIN_PASSWORD=changeme123
+
+# API Keys
 OPENROUTER_API_KEY=your_key_here
 FINNHUB_API_KEY=your_key_here
+
+# IBKR Connection
 IBKR_HOST=127.0.0.1
 IBKR_PAPER_PORT=7497
 IBKR_LIVE_PORT=7496
 IBKR_GATEWAY_PORT=4002
 ```
+
+**Important:** Change the default `ADMIN_PASSWORD` to a secure password before deploying to production!
 
 ### IB Gateway/TWS Configuration
 **Important:** Ensure the following settings in IB Gateway/TWS:
