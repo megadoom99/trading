@@ -39,6 +39,17 @@ class DatabaseManager:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
+                        CREATE TABLE IF NOT EXISTS users (
+                            id SERIAL PRIMARY KEY,
+                            username VARCHAR(50) UNIQUE NOT NULL,
+                            email VARCHAR(255) UNIQUE NOT NULL,
+                            password_hash VARCHAR(255) NOT NULL,
+                            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                            last_login TIMESTAMP
+                        )
+                    """)
+                    
+                    cur.execute("""
                         CREATE TABLE IF NOT EXISTS trades (
                             id SERIAL PRIMARY KEY,
                             user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -64,17 +75,6 @@ class DatabaseManager:
                             exit_timestamp TIMESTAMP,
                             holding_period_seconds INTEGER,
                             created_at TIMESTAMP NOT NULL DEFAULT NOW()
-                        )
-                    """)
-                    
-                    cur.execute("""
-                        CREATE TABLE IF NOT EXISTS users (
-                            id SERIAL PRIMARY KEY,
-                            username VARCHAR(50) UNIQUE NOT NULL,
-                            email VARCHAR(255) UNIQUE NOT NULL,
-                            password_hash VARCHAR(255) NOT NULL,
-                            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                            last_login TIMESTAMP
                         )
                     """)
                     
@@ -108,18 +108,6 @@ class DatabaseManager:
                             created_at TIMESTAMP NOT NULL DEFAULT NOW(),
                             notes TEXT
                         )
-                    """)
-                    
-                    cur.execute("""
-                        DO $$ 
-                        BEGIN
-                            IF NOT EXISTS (
-                                SELECT 1 FROM information_schema.columns 
-                                WHERE table_name = 'trades' AND column_name = 'user_id'
-                            ) THEN
-                                ALTER TABLE trades ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
-                            END IF;
-                        END $$;
                     """)
                     
                     cur.execute("""
