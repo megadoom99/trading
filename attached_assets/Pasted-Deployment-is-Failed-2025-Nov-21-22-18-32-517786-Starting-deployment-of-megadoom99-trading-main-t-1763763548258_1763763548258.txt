@@ -1,0 +1,691 @@
+Deployment is Failed.
+
+
+2025-Nov-21 22:18:32.517786
+Starting deployment of megadoom99/trading:main to localhost.
+2025-Nov-21 22:18:32.716083
+Preparing container with helper image: ghcr.io/coollabsio/coolify-helper:1.0.12
+2025-Nov-21 22:18:32.832343
+[CMD]: sudo docker stop --time=30 fgk8404okgs04g4ok4swowcc
+2025-Nov-21 22:18:32.832343
+Flag --time has been deprecated, use --timeout instead
+2025-Nov-21 22:18:32.833719
+Error response from daemon: No such container: fgk8404okgs04g4ok4swowcc
+2025-Nov-21 22:18:32.955511
+[CMD]: sudo docker rm -f fgk8404okgs04g4ok4swowcc
+2025-Nov-21 22:18:32.955511
+Error response from daemon: No such container: fgk8404okgs04g4ok4swowcc
+2025-Nov-21 22:18:33.094398
+[CMD]: sudo docker run -d --network coolify --name fgk8404okgs04g4ok4swowcc  --rm -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/coollabsio/coolify-helper:1.0.12
+2025-Nov-21 22:18:33.094398
+30655728f02c380401734540c39f09a405eae8488e9074e35227018481bd0554
+2025-Nov-21 22:18:33.826841
+[CMD]: sudo docker exec fgk8404okgs04g4ok4swowcc bash -c 'GIT_SSH_COMMAND="ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git ls-remote https://github.com/megadoom99/trading refs/heads/main'
+2025-Nov-21 22:18:33.826841
+84c664c8966a7e5c0175b8b24beb7f56026d6508	refs/heads/main
+2025-Nov-21 22:18:33.842212
+----------------------------------------
+2025-Nov-21 22:18:33.847992
+Importing megadoom99/trading:main (commit sha 84c664c8966a7e5c0175b8b24beb7f56026d6508) to /artifacts/fgk8404okgs04g4ok4swowcc.
+2025-Nov-21 22:18:34.031410
+[CMD]: sudo docker exec fgk8404okgs04g4ok4swowcc bash -c 'git clone --depth=1 --recurse-submodules --shallow-submodules -b 'main' 'https://github.com/megadoom99/trading' '/artifacts/fgk8404okgs04g4ok4swowcc' && cd '/artifacts/fgk8404okgs04g4ok4swowcc' && if [ -f .gitmodules ]; then sed -i "s#git@\(.*\):#https://\1/#g" '/artifacts/fgk8404okgs04g4ok4swowcc'/.gitmodules || true && git submodule sync && GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git submodule update --init --recursive --depth=1; fi && cd '/artifacts/fgk8404okgs04g4ok4swowcc' && GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git lfs pull'
+2025-Nov-21 22:18:34.031410
+Cloning into '/artifacts/fgk8404okgs04g4ok4swowcc'...
+2025-Nov-21 22:18:35.326160
+[CMD]: sudo docker exec fgk8404okgs04g4ok4swowcc bash -c 'cd /artifacts/fgk8404okgs04g4ok4swowcc && git log -1 84c664c8966a7e5c0175b8b24beb7f56026d6508 --pretty=%B'
+2025-Nov-21 22:18:35.326160
+Saved progress at the end of the loop
+2025-Nov-21 22:18:35.326160
+2025-Nov-21 22:18:35.326160
+Replit-Commit-Author: Agent
+2025-Nov-21 22:18:35.326160
+Replit-Commit-Session-Id: 8c2a282e-26b1-4cad-af05-4dad5c994622
+2025-Nov-21 22:18:35.326160
+Replit-Commit-Checkpoint-Type: full_checkpoint
+2025-Nov-21 22:18:35.326160
+Replit-Commit-Event-Id: d18bbad1-8413-4ed5-ab1d-52cb4b2bcf36
+2025-Nov-21 22:18:35.326160
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/6ce65633-0d49-44cf-930e-9df3433add49/8c2a282e-26b1-4cad-af05-4dad5c994622/aHycOxz
+2025-Nov-21 22:18:35.464466
+Image not found (sosc4gsc8gkgwwsk8gs8so4g:84c664c8966a7e5c0175b8b24beb7f56026d6508). Building new image.
+2025-Nov-21 22:18:36.154197
+[CMD]: sudo docker exec fgk8404okgs04g4ok4swowcc bash -c 'cat /artifacts/fgk8404okgs04g4ok4swowcc/Dockerfile'
+2025-Nov-21 22:18:36.154197
+FROM python:3.11-slim
+2025-Nov-21 22:18:36.154197
+2025-Nov-21 22:18:36.154197
+# Set working directory (must NOT be root for Streamlit 1.10.0+)
+2025-Nov-21 22:18:36.154197
+WORKDIR /app
+2025-Nov-21 22:18:36.154197
+2025-Nov-21 22:18:36.154197
+# Install system dependencies including curl for healthcheck
+2025-Nov-21 22:18:36.154197
+RUN apt-get update && apt-get install -y \
+2025-Nov-21 22:18:36.154197
+build-essential \
+2025-Nov-21 22:18:36.154197
+curl \
+2025-Nov-21 22:18:36.154197
+software-properties-common \
+2025-Nov-21 22:18:36.154197
+git \
+2025-Nov-21 22:18:36.154197
+&& rm -rf /var/lib/apt/lists/*
+2025-Nov-21 22:18:36.154197
+2025-Nov-21 22:18:36.154197
+# Copy requirements file
+2025-Nov-21 22:18:36.154197
+COPY requirements-docker.txt requirements.txt
+2025-Nov-21 22:18:36.154197
+2025-Nov-21 22:18:36.154197
+# Install Python dependencies
+2025-Nov-21 22:18:36.154197
+RUN pip3 install --no-cache-dir -r requirements.txt
+2025-Nov-21 22:18:36.154197
+2025-Nov-21 22:18:36.154197
+# Copy application code
+2025-Nov-21 22:18:36.154197
+COPY . .
+2025-Nov-21 22:18:36.154197
+2025-Nov-21 22:18:36.154197
+# Create necessary directories
+2025-Nov-21 22:18:36.154197
+RUN mkdir -p .streamlit
+2025-Nov-21 22:18:36.154197
+2025-Nov-21 22:18:36.154197
+# Expose Streamlit port (Coolify standard)
+2025-Nov-21 22:18:36.154197
+EXPOSE 8501
+2025-Nov-21 22:18:36.154197
+2025-Nov-21 22:18:36.154197
+# Health check for Coolify monitoring
+2025-Nov-21 22:18:36.154197
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+2025-Nov-21 22:18:36.154197
+CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+2025-Nov-21 22:18:36.154197
+2025-Nov-21 22:18:36.154197
+# Run Streamlit with proper configuration
+2025-Nov-21 22:18:36.154197
+# Note: server.address=0.0.0.0 is critical for Docker networking
+2025-Nov-21 22:18:36.154197
+ENTRYPOINT ["streamlit", "run", "app.py", \
+2025-Nov-21 22:18:36.154197
+"--server.port=8501", \
+2025-Nov-21 22:18:36.154197
+"--server.address=0.0.0.0", \
+2025-Nov-21 22:18:36.154197
+"--server.headless=true", \
+2025-Nov-21 22:18:36.154197
+"--server.enableCORS=false", \
+2025-Nov-21 22:18:36.154197
+"--server.enableXsrfProtection=true"]
+2025-Nov-21 22:18:36.339921
+Creating build-time .env file in /artifacts (outside Docker context).
+2025-Nov-21 22:18:36.678644
+[CMD]: sudo docker exec fgk8404okgs04g4ok4swowcc bash -c 'cat /artifacts/build-time.env'
+2025-Nov-21 22:18:36.678644
+SOURCE_COMMIT='84c664c8966a7e5c0175b8b24beb7f56026d6508'
+2025-Nov-21 22:18:36.678644
+COOLIFY_URL='http://sosc4gsc8gkgwwsk8gs8so4g.152.37.70.173.sslip.io'
+2025-Nov-21 22:18:36.678644
+COOLIFY_FQDN='sosc4gsc8gkgwwsk8gs8so4g.152.37.70.173.sslip.io'
+2025-Nov-21 22:18:36.678644
+COOLIFY_BRANCH='main'
+2025-Nov-21 22:18:36.678644
+COOLIFY_RESOURCE_UUID='sosc4gsc8gkgwwsk8gs8so4g'
+2025-Nov-21 22:18:36.678644
+COOLIFY_CONTAINER_NAME='sosc4gsc8gkgwwsk8gs8so4g-221829425490'
+2025-Nov-21 22:18:36.678644
+OPENROUTER_API_KEY="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"
+2025-Nov-21 22:18:36.678644
+POSTGRES_DB="trading_db"
+2025-Nov-21 22:18:36.678644
+POSTGRES_PASSWORD="7FPFnFQd92lD9xNGUKBVKKcWTOFBUXoV74vu49UFs5bI5m0yLpXCbwZ1pvFvQiJB"
+2025-Nov-21 22:18:36.678644
+POSTGRES_USER="postgres"
+2025-Nov-21 22:18:36.678644
+SESSION_SECRET="3653135ebbeb5eac520558a8b559045be340d6a7e3425c1b7a61c3c5558f46eb"
+2025-Nov-21 22:18:36.850142
+[CMD]: sudo docker exec fgk8404okgs04g4ok4swowcc bash -c 'cat /artifacts/fgk8404okgs04g4ok4swowcc/Dockerfile'
+2025-Nov-21 22:18:36.850142
+FROM python:3.11-slim
+2025-Nov-21 22:18:36.850142
+2025-Nov-21 22:18:36.850142
+# Set working directory (must NOT be root for Streamlit 1.10.0+)
+2025-Nov-21 22:18:36.850142
+WORKDIR /app
+2025-Nov-21 22:18:36.850142
+2025-Nov-21 22:18:36.850142
+# Install system dependencies including curl for healthcheck
+2025-Nov-21 22:18:36.850142
+RUN apt-get update && apt-get install -y \
+2025-Nov-21 22:18:36.850142
+build-essential \
+2025-Nov-21 22:18:36.850142
+curl \
+2025-Nov-21 22:18:36.850142
+software-properties-common \
+2025-Nov-21 22:18:36.850142
+git \
+2025-Nov-21 22:18:36.850142
+&& rm -rf /var/lib/apt/lists/*
+2025-Nov-21 22:18:36.850142
+2025-Nov-21 22:18:36.850142
+# Copy requirements file
+2025-Nov-21 22:18:36.850142
+COPY requirements-docker.txt requirements.txt
+2025-Nov-21 22:18:36.850142
+2025-Nov-21 22:18:36.850142
+# Install Python dependencies
+2025-Nov-21 22:18:36.850142
+RUN pip3 install --no-cache-dir -r requirements.txt
+2025-Nov-21 22:18:36.850142
+2025-Nov-21 22:18:36.850142
+# Copy application code
+2025-Nov-21 22:18:36.850142
+COPY . .
+2025-Nov-21 22:18:36.850142
+2025-Nov-21 22:18:36.850142
+# Create necessary directories
+2025-Nov-21 22:18:36.850142
+RUN mkdir -p .streamlit
+2025-Nov-21 22:18:36.850142
+2025-Nov-21 22:18:36.850142
+# Expose Streamlit port (Coolify standard)
+2025-Nov-21 22:18:36.850142
+EXPOSE 8501
+2025-Nov-21 22:18:36.850142
+2025-Nov-21 22:18:36.850142
+# Health check for Coolify monitoring
+2025-Nov-21 22:18:36.850142
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+2025-Nov-21 22:18:36.850142
+CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+2025-Nov-21 22:18:36.850142
+2025-Nov-21 22:18:36.850142
+# Run Streamlit with proper configuration
+2025-Nov-21 22:18:36.850142
+# Note: server.address=0.0.0.0 is critical for Docker networking
+2025-Nov-21 22:18:36.850142
+ENTRYPOINT ["streamlit", "run", "app.py", \
+2025-Nov-21 22:18:36.850142
+"--server.port=8501", \
+2025-Nov-21 22:18:36.850142
+"--server.address=0.0.0.0", \
+2025-Nov-21 22:18:36.850142
+"--server.headless=true", \
+2025-Nov-21 22:18:36.850142
+"--server.enableCORS=false", \
+2025-Nov-21 22:18:36.850142
+"--server.enableXsrfProtection=true"]
+2025-Nov-21 22:18:36.866534
+Final Dockerfile:
+2025-Nov-21 22:18:37.191920
+[CMD]: sudo docker exec fgk8404okgs04g4ok4swowcc bash -c 'cat /artifacts/fgk8404okgs04g4ok4swowcc/Dockerfile'
+2025-Nov-21 22:18:37.191920
+FROM python:3.11-slim
+2025-Nov-21 22:18:37.191920
+ARG OPENROUTER_API_KEY=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
+2025-Nov-21 22:18:37.191920
+ARG POSTGRES_DB=trading_db
+2025-Nov-21 22:18:37.191920
+ARG POSTGRES_PASSWORD=7FPFnFQd92lD9xNGUKBVKKcWTOFBUXoV74vu49UFs5bI5m0yLpXCbwZ1pvFvQiJB
+2025-Nov-21 22:18:37.191920
+ARG POSTGRES_USER=postgres
+2025-Nov-21 22:18:37.191920
+ARG SESSION_SECRET=3653135ebbeb5eac520558a8b559045be340d6a7e3425c1b7a61c3c5558f46eb
+2025-Nov-21 22:18:37.191920
+ARG SOURCE_COMMIT=84c664c8966a7e5c0175b8b24beb7f56026d6508
+2025-Nov-21 22:18:37.191920
+ARG COOLIFY_URL=http://sosc4gsc8gkgwwsk8gs8so4g.152.37.70.173.sslip.io
+2025-Nov-21 22:18:37.191920
+ARG COOLIFY_FQDN=sosc4gsc8gkgwwsk8gs8so4g.152.37.70.173.sslip.io
+2025-Nov-21 22:18:37.191920
+ARG COOLIFY_BRANCH=main
+2025-Nov-21 22:18:37.191920
+ARG COOLIFY_RESOURCE_UUID=sosc4gsc8gkgwwsk8gs8so4g
+2025-Nov-21 22:18:37.191920
+ARG COOLIFY_CONTAINER_NAME=sosc4gsc8gkgwwsk8gs8so4g-221829425490
+2025-Nov-21 22:18:37.191920
+2025-Nov-21 22:18:37.191920
+# Set working directory (must NOT be root for Streamlit 1.10.0+)
+2025-Nov-21 22:18:37.191920
+WORKDIR /app
+2025-Nov-21 22:18:37.191920
+2025-Nov-21 22:18:37.191920
+# Install system dependencies including curl for healthcheck
+2025-Nov-21 22:18:37.191920
+RUN apt-get update && apt-get install -y \
+2025-Nov-21 22:18:37.191920
+build-essential \
+2025-Nov-21 22:18:37.191920
+curl \
+2025-Nov-21 22:18:37.191920
+software-properties-common \
+2025-Nov-21 22:18:37.191920
+git \
+2025-Nov-21 22:18:37.191920
+&& rm -rf /var/lib/apt/lists/*
+2025-Nov-21 22:18:37.191920
+2025-Nov-21 22:18:37.191920
+# Copy requirements file
+2025-Nov-21 22:18:37.191920
+COPY requirements-docker.txt requirements.txt
+2025-Nov-21 22:18:37.191920
+2025-Nov-21 22:18:37.191920
+# Install Python dependencies
+2025-Nov-21 22:18:37.191920
+RUN pip3 install --no-cache-dir -r requirements.txt
+2025-Nov-21 22:18:37.191920
+2025-Nov-21 22:18:37.191920
+# Copy application code
+2025-Nov-21 22:18:37.191920
+COPY . .
+2025-Nov-21 22:18:37.191920
+2025-Nov-21 22:18:37.191920
+# Create necessary directories
+2025-Nov-21 22:18:37.191920
+RUN mkdir -p .streamlit
+2025-Nov-21 22:18:37.191920
+2025-Nov-21 22:18:37.191920
+# Expose Streamlit port (Coolify standard)
+2025-Nov-21 22:18:37.191920
+EXPOSE 8501
+2025-Nov-21 22:18:37.191920
+2025-Nov-21 22:18:37.191920
+# Health check for Coolify monitoring
+2025-Nov-21 22:18:37.191920
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+2025-Nov-21 22:18:37.191920
+CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+2025-Nov-21 22:18:37.191920
+2025-Nov-21 22:18:37.191920
+# Run Streamlit with proper configuration
+2025-Nov-21 22:18:37.191920
+# Note: server.address=0.0.0.0 is critical for Docker networking
+2025-Nov-21 22:18:37.191920
+ENTRYPOINT ["streamlit", "run", "app.py", \
+2025-Nov-21 22:18:37.191920
+"--server.port=8501", \
+2025-Nov-21 22:18:37.191920
+"--server.address=0.0.0.0", \
+2025-Nov-21 22:18:37.191920
+"--server.headless=true", \
+2025-Nov-21 22:18:37.191920
+"--server.enableCORS=false", \
+2025-Nov-21 22:18:37.191920
+"--server.enableXsrfProtection=true"]
+2025-Nov-21 22:18:37.198042
+----------------------------------------
+2025-Nov-21 22:18:37.202987
+Building docker image started.
+2025-Nov-21 22:18:37.207685
+To check the current progress, click on Show Debug Logs.
+2025-Nov-21 22:18:37.558733
+[CMD]: sudo docker exec fgk8404okgs04g4ok4swowcc bash -c 'cat /artifacts/build.sh'
+2025-Nov-21 22:18:37.558733
+cd /artifacts/fgk8404okgs04g4ok4swowcc && set -a && source /artifacts/build-time.env && set +a && docker build  --add-host coolify:10.0.1.10 --add-host coolify-db:10.0.1.5 --add-host coolify-realtime:10.0.1.4 --add-host coolify-redis:10.0.1.8 --add-host jkcw4o0scoggssw04sw4go0s:10.0.1.2 --add-host nocodb-ykwg8os84soogwwk4oscksok:10.0.1.3 --network host -f /artifacts/fgk8404okgs04g4ok4swowcc/Dockerfile --build-arg SOURCE_COMMIT --build-arg COOLIFY_URL --build-arg COOLIFY_FQDN --build-arg COOLIFY_BRANCH --build-arg COOLIFY_RESOURCE_UUID --build-arg COOLIFY_CONTAINER_NAME --build-arg OPENROUTER_API_KEY --build-arg POSTGRES_DB --build-arg POSTGRES_PASSWORD --build-arg POSTGRES_USER --build-arg SESSION_SECRET --build-arg COOLIFY_BUILD_SECRETS_HASH=2ad69fe54703cf38f80f15b429945e2a7f90626a1c415a68a47311f3ab247c45 --build-arg 'SOURCE_COMMIT' --build-arg 'COOLIFY_URL' --build-arg 'COOLIFY_FQDN' --build-arg 'COOLIFY_BRANCH' --build-arg 'COOLIFY_RESOURCE_UUID' --build-arg 'COOLIFY_CONTAINER_NAME' --progress plain -t sosc4gsc8gkgwwsk8gs8so4g:84c664c8966a7e5c0175b8b24beb7f56026d6508 /artifacts/fgk8404okgs04g4ok4swowcc
+2025-Nov-21 22:18:38.213237
+[CMD]: sudo docker exec fgk8404okgs04g4ok4swowcc bash -c 'bash /artifacts/build.sh'
+2025-Nov-21 22:18:38.213237
+#0 building with "default" instance using docker driver
+2025-Nov-21 22:18:38.213237
+2025-Nov-21 22:18:38.213237
+#1 [internal] load build definition from Dockerfile
+2025-Nov-21 22:18:38.213237
+#1 transferring dockerfile: 1.85kB done
+2025-Nov-21 22:18:38.213237
+#1 DONE 0.0s
+2025-Nov-21 22:18:38.213237
+2025-Nov-21 22:18:38.213237
+#2 [internal] load metadata for docker.io/library/python:3.11-slim
+2025-Nov-21 22:18:39.179019
+#2 DONE 1.1s
+2025-Nov-21 22:18:39.313865
+#3 [internal] load .dockerignore
+2025-Nov-21 22:18:39.313865
+#3 transferring context: 575B done
+2025-Nov-21 22:18:39.313865
+#3 DONE 0.0s
+2025-Nov-21 22:18:39.313865
+2025-Nov-21 22:18:39.313865
+#4 [internal] load build context
+2025-Nov-21 22:18:39.313865
+#4 transferring context: 9.37MB 0.1s done
+2025-Nov-21 22:18:39.313865
+#4 DONE 0.1s
+2025-Nov-21 22:18:39.313865
+2025-Nov-21 22:18:39.313865
+#5 [1/7] FROM docker.io/library/python:3.11-slim@sha256:193fdd0bbcb3d2ae612bd6cc3548d2f7c78d65b549fcaa8af75624c47474444d
+2025-Nov-21 22:18:39.313865
+#5 resolve docker.io/library/python:3.11-slim@sha256:193fdd0bbcb3d2ae612bd6cc3548d2f7c78d65b549fcaa8af75624c47474444d done
+2025-Nov-21 22:18:39.313865
+#5 sha256:c4116d4d7ea9320db352f6516001262753529edf1e20b2c6609a6b9a49cc6be4 1.75kB / 1.75kB done
+2025-Nov-21 22:18:39.313865
+#5 sha256:040af88f5bce9e9239b7e739e86304d26964d1d55ada56b9297a3d891e91634d 5.48kB / 5.48kB done
+2025-Nov-21 22:18:39.313865
+#5 sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 0B / 29.78MB 0.1s
+2025-Nov-21 22:18:39.313865
+#5 sha256:22b63e76fde1e200371ed9f3cee91161d192063bcff65c9ab6bf63819810a974 0B / 1.29MB 0.1s
+2025-Nov-21 22:18:39.313865
+#5 sha256:b3dd773c329649f22e467ae63d1c612a039a0559dec99ffb9ada904ab5c60c55 0B / 14.36MB 0.1s
+2025-Nov-21 22:18:39.313865
+#5 sha256:193fdd0bbcb3d2ae612bd6cc3548d2f7c78d65b549fcaa8af75624c47474444d 10.37kB / 10.37kB done
+2025-Nov-21 22:18:39.513442
+#5 sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 5.24MB / 29.78MB 0.3s
+2025-Nov-21 22:18:39.713027
+#5 sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 15.73MB / 29.78MB 0.5s
+2025-Nov-21 22:18:39.713027
+#5 sha256:22b63e76fde1e200371ed9f3cee91161d192063bcff65c9ab6bf63819810a974 1.29MB / 1.29MB 0.4s done
+2025-Nov-21 22:18:39.713027
+#5 sha256:b3dd773c329649f22e467ae63d1c612a039a0559dec99ffb9ada904ab5c60c55 2.10MB / 14.36MB 0.5s
+2025-Nov-21 22:18:39.713027
+#5 sha256:1771569cc1299abc9cc762fc4419523e721b11a3927ef968ae63ba0a4a88f2da 0B / 251B 0.5s
+2025-Nov-21 22:18:39.813250
+#5 sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 19.92MB / 29.78MB 0.6s
+2025-Nov-21 22:18:39.813250
+#5 sha256:b3dd773c329649f22e467ae63d1c612a039a0559dec99ffb9ada904ab5c60c55 6.29MB / 14.36MB 0.6s
+2025-Nov-21 22:18:40.013382
+#5 sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 28.31MB / 29.78MB 0.8s
+2025-Nov-21 22:18:40.013382
+#5 sha256:b3dd773c329649f22e467ae63d1c612a039a0559dec99ffb9ada904ab5c60c55 14.36MB / 14.36MB 0.8s done
+2025-Nov-21 22:18:40.013382
+#5 sha256:1771569cc1299abc9cc762fc4419523e721b11a3927ef968ae63ba0a4a88f2da 251B / 251B 0.7s done
+2025-Nov-21 22:18:40.186578
+#5 sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 29.78MB / 29.78MB 0.8s done
+2025-Nov-21 22:18:40.186578
+#5 extracting sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 0.1s
+2025-Nov-21 22:18:40.952667
+#5 extracting sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 0.9s done
+2025-Nov-21 22:18:41.090362
+#5 extracting sha256:22b63e76fde1e200371ed9f3cee91161d192063bcff65c9ab6bf63819810a974 0.1s done
+2025-Nov-21 22:18:41.218238
+#5 extracting sha256:b3dd773c329649f22e467ae63d1c612a039a0559dec99ffb9ada904ab5c60c55 0.1s
+2025-Nov-21 22:18:41.751814
+#5 extracting sha256:b3dd773c329649f22e467ae63d1c612a039a0559dec99ffb9ada904ab5c60c55 0.5s done
+2025-Nov-21 22:18:41.751814
+#5 extracting sha256:1771569cc1299abc9cc762fc4419523e721b11a3927ef968ae63ba0a4a88f2da done
+2025-Nov-21 22:18:41.751814
+#5 DONE 2.6s
+2025-Nov-21 22:18:41.903727
+#6 [2/7] WORKDIR /app
+2025-Nov-21 22:18:41.909961
+#6 DONE 0.2s
+2025-Nov-21 22:18:42.049276
+#7 [3/7] RUN apt-get update && apt-get install -y     build-essential     curl     software-properties-common     git     && rm -rf /var/lib/apt/lists/*
+2025-Nov-21 22:18:42.049276
+#7 0.137 Hit:1 http://deb.debian.org/debian trixie InRelease
+2025-Nov-21 22:18:42.049276
+#7 0.137 Get:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]
+2025-Nov-21 22:18:42.188169
+#7 0.139 Get:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]
+2025-Nov-21 22:18:42.188169
+#7 0.164 Get:4 http://deb.debian.org/debian trixie/main amd64 Packages [9670 kB]
+2025-Nov-21 22:18:42.188169
+#7 0.276 Get:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [5412 B]
+2025-Nov-21 22:18:42.338765
+#7 0.276 Get:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [71.8 kB]
+2025-Nov-21 22:18:42.805330
+#7 0.894 Fetched 9838 kB in 1s (12.4 MB/s)
+2025-Nov-21 22:18:42.805330
+#7 0.894 Reading package lists...
+2025-Nov-21 22:18:43.270720
+2025-Nov-21 22:18:43.444610
+#7 1.382 Reading package lists...
+2025-Nov-21 22:18:43.742767
+2025-Nov-21 22:18:43.856337
+#7 1.844 Building dependency tree...
+2025-Nov-21 22:18:43.856337
+#7 1.945 Reading state information...
+2025-Nov-21 22:18:43.925587
+#7 1.958 E: Unable to locate package software-properties-common
+2025-Nov-21 22:18:43.925587
+#7 ERROR: process "/bin/sh -c apt-get update && apt-get install -y     build-essential     curl     software-properties-common     git     && rm -rf /var/lib/apt/lists/*" did not complete successfully: exit code: 100
+2025-Nov-21 22:18:43.925587
+------
+2025-Nov-21 22:18:43.925587
+> [3/7] RUN apt-get update && apt-get install -y     build-essential     curl     software-properties-common     git     && rm -rf /var/lib/apt/lists/*:
+2025-Nov-21 22:18:43.925587
+0.137 Hit:1 http://deb.debian.org/debian trixie InRelease
+2025-Nov-21 22:18:43.925587
+0.137 Get:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]
+2025-Nov-21 22:18:43.925587
+0.139 Get:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]
+2025-Nov-21 22:18:43.925587
+0.164 Get:4 http://deb.debian.org/debian trixie/main amd64 Packages [9670 kB]
+2025-Nov-21 22:18:43.925587
+0.276 Get:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [5412 B]
+2025-Nov-21 22:18:43.925587
+0.276 Get:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [71.8 kB]
+2025-Nov-21 22:18:43.925587
+2025-Nov-21 22:18:43.925587
+2025-Nov-21 22:18:43.925587
+2025-Nov-21 22:18:43.925587
+1.958 E: Unable to locate package software-properties-common
+2025-Nov-21 22:18:43.925587
+------
+2025-Nov-21 22:18:43.928093
+3 warnings found (use docker --debug to expand):
+2025-Nov-21 22:18:43.928093
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "POSTGRES_PASSWORD") (line 4)
+2025-Nov-21 22:18:43.928093
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "SESSION_SECRET") (line 6)
+2025-Nov-21 22:18:43.928093
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "OPENROUTER_API_KEY") (line 2)
+2025-Nov-21 22:18:43.928093
+Dockerfile:18
+2025-Nov-21 22:18:43.928093
+--------------------
+2025-Nov-21 22:18:43.928093
+17 |     # Install system dependencies including curl for healthcheck
+2025-Nov-21 22:18:43.928093
+18 | >>> RUN apt-get update && apt-get install -y \
+2025-Nov-21 22:18:43.928093
+19 | >>>     build-essential \
+2025-Nov-21 22:18:43.928093
+20 | >>>     curl \
+2025-Nov-21 22:18:43.928093
+21 | >>>     software-properties-common \
+2025-Nov-21 22:18:43.928093
+22 | >>>     git \
+2025-Nov-21 22:18:43.928093
+23 | >>>     && rm -rf /var/lib/apt/lists/*
+2025-Nov-21 22:18:43.928093
+24 |
+2025-Nov-21 22:18:43.928093
+--------------------
+2025-Nov-21 22:18:43.928093
+ERROR: failed to build: failed to solve: process "/bin/sh -c apt-get update && apt-get install -y     build-essential     curl     software-properties-common     git     && rm -rf /var/lib/apt/lists/*" did not complete successfully: exit code: 100
+2025-Nov-21 22:18:43.933014
+exit status 1
+2025-Nov-21 22:18:43.969032
+Oops something is not okay, are you okay? 😢
+2025-Nov-21 22:18:43.974901
+#0 building with "default" instance using docker driver
+2025-Nov-21 22:18:43.974901
+2025-Nov-21 22:18:43.974901
+#1 [internal] load build definition from Dockerfile
+2025-Nov-21 22:18:43.974901
+#1 transferring dockerfile: 1.85kB done
+2025-Nov-21 22:18:43.974901
+#1 DONE 0.0s
+2025-Nov-21 22:18:43.974901
+2025-Nov-21 22:18:43.974901
+#2 [internal] load metadata for docker.io/library/python:3.11-slim
+2025-Nov-21 22:18:43.974901
+#2 DONE 1.1s
+2025-Nov-21 22:18:43.974901
+2025-Nov-21 22:18:43.974901
+#3 [internal] load .dockerignore
+2025-Nov-21 22:18:43.974901
+#3 transferring context: 575B done
+2025-Nov-21 22:18:43.974901
+#3 DONE 0.0s
+2025-Nov-21 22:18:43.974901
+2025-Nov-21 22:18:43.974901
+#4 [internal] load build context
+2025-Nov-21 22:18:43.974901
+#4 transferring context: 9.37MB 0.1s done
+2025-Nov-21 22:18:43.974901
+#4 DONE 0.1s
+2025-Nov-21 22:18:43.974901
+2025-Nov-21 22:18:43.974901
+#5 [1/7] FROM docker.io/library/python:3.11-slim@sha256:193fdd0bbcb3d2ae612bd6cc3548d2f7c78d65b549fcaa8af75624c47474444d
+2025-Nov-21 22:18:43.974901
+#5 resolve docker.io/library/python:3.11-slim@sha256:193fdd0bbcb3d2ae612bd6cc3548d2f7c78d65b549fcaa8af75624c47474444d done
+2025-Nov-21 22:18:43.974901
+#5 sha256:c4116d4d7ea9320db352f6516001262753529edf1e20b2c6609a6b9a49cc6be4 1.75kB / 1.75kB done
+2025-Nov-21 22:18:43.974901
+#5 sha256:040af88f5bce9e9239b7e739e86304d26964d1d55ada56b9297a3d891e91634d 5.48kB / 5.48kB done
+2025-Nov-21 22:18:43.974901
+#5 sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 0B / 29.78MB 0.1s
+2025-Nov-21 22:18:43.974901
+#5 sha256:22b63e76fde1e200371ed9f3cee91161d192063bcff65c9ab6bf63819810a974 0B / 1.29MB 0.1s
+2025-Nov-21 22:18:43.974901
+#5 sha256:b3dd773c329649f22e467ae63d1c612a039a0559dec99ffb9ada904ab5c60c55 0B / 14.36MB 0.1s
+2025-Nov-21 22:18:43.974901
+#5 sha256:193fdd0bbcb3d2ae612bd6cc3548d2f7c78d65b549fcaa8af75624c47474444d 10.37kB / 10.37kB done
+2025-Nov-21 22:18:43.974901
+#5 sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 5.24MB / 29.78MB 0.3s
+2025-Nov-21 22:18:43.974901
+#5 sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 15.73MB / 29.78MB 0.5s
+2025-Nov-21 22:18:43.974901
+#5 sha256:22b63e76fde1e200371ed9f3cee91161d192063bcff65c9ab6bf63819810a974 1.29MB / 1.29MB 0.4s done
+2025-Nov-21 22:18:43.974901
+#5 sha256:b3dd773c329649f22e467ae63d1c612a039a0559dec99ffb9ada904ab5c60c55 2.10MB / 14.36MB 0.5s
+2025-Nov-21 22:18:43.974901
+#5 sha256:1771569cc1299abc9cc762fc4419523e721b11a3927ef968ae63ba0a4a88f2da 0B / 251B 0.5s
+2025-Nov-21 22:18:43.974901
+#5 sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 19.92MB / 29.78MB 0.6s
+2025-Nov-21 22:18:43.974901
+#5 sha256:b3dd773c329649f22e467ae63d1c612a039a0559dec99ffb9ada904ab5c60c55 6.29MB / 14.36MB 0.6s
+2025-Nov-21 22:18:43.974901
+#5 sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 28.31MB / 29.78MB 0.8s
+2025-Nov-21 22:18:43.974901
+#5 sha256:b3dd773c329649f22e467ae63d1c612a039a0559dec99ffb9ada904ab5c60c55 14.36MB / 14.36MB 0.8s done
+2025-Nov-21 22:18:43.974901
+#5 sha256:1771569cc1299abc9cc762fc4419523e721b11a3927ef968ae63ba0a4a88f2da 251B / 251B 0.7s done
+2025-Nov-21 22:18:43.974901
+#5 sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 29.78MB / 29.78MB 0.8s done
+2025-Nov-21 22:18:43.974901
+#5 extracting sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 0.1s
+2025-Nov-21 22:18:43.974901
+#5 extracting sha256:0e4bc2bd6656e6e004e3c749af70e5650bac2258243eb0949dea51cb8b7863db 0.9s done
+2025-Nov-21 22:18:43.974901
+#5 extracting sha256:22b63e76fde1e200371ed9f3cee91161d192063bcff65c9ab6bf63819810a974 0.1s done
+2025-Nov-21 22:18:43.974901
+#5 extracting sha256:b3dd773c329649f22e467ae63d1c612a039a0559dec99ffb9ada904ab5c60c55 0.1s
+2025-Nov-21 22:18:43.974901
+#5 extracting sha256:b3dd773c329649f22e467ae63d1c612a039a0559dec99ffb9ada904ab5c60c55 0.5s done
+2025-Nov-21 22:18:43.974901
+#5 extracting sha256:1771569cc1299abc9cc762fc4419523e721b11a3927ef968ae63ba0a4a88f2da done
+2025-Nov-21 22:18:43.974901
+#5 DONE 2.6s
+2025-Nov-21 22:18:43.974901
+2025-Nov-21 22:18:43.974901
+#6 [2/7] WORKDIR /app
+2025-Nov-21 22:18:43.974901
+#6 DONE 0.2s
+2025-Nov-21 22:18:43.974901
+2025-Nov-21 22:18:43.974901
+#7 [3/7] RUN apt-get update && apt-get install -y     build-essential     curl     software-properties-common     git     && rm -rf /var/lib/apt/lists/*
+2025-Nov-21 22:18:43.974901
+#7 0.137 Hit:1 http://deb.debian.org/debian trixie InRelease
+2025-Nov-21 22:18:43.974901
+#7 0.137 Get:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]
+2025-Nov-21 22:18:43.974901
+#7 0.139 Get:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]
+2025-Nov-21 22:18:43.974901
+#7 0.164 Get:4 http://deb.debian.org/debian trixie/main amd64 Packages [9670 kB]
+2025-Nov-21 22:18:43.974901
+#7 0.276 Get:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [5412 B]
+2025-Nov-21 22:18:43.974901
+#7 0.276 Get:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [71.8 kB]
+2025-Nov-21 22:18:43.974901
+#7 0.894 Fetched 9838 kB in 1s (12.4 MB/s)
+2025-Nov-21 22:18:43.974901
+#7 0.894 Reading package lists...
+2025-Nov-21 22:18:43.974901
+#7 1.382 Reading package lists...
+2025-Nov-21 22:18:43.974901
+#7 1.844 Building dependency tree...
+2025-Nov-21 22:18:43.974901
+#7 1.945 Reading state information...
+2025-Nov-21 22:18:43.974901
+#7 1.958 E: Unable to locate package software-properties-common
+2025-Nov-21 22:18:43.974901
+#7 ERROR: process "/bin/sh -c apt-get update && apt-get install -y     build-essential     curl     software-properties-common     git     && rm -rf /var/lib/apt/lists/*" did not complete successfully: exit code: 100
+2025-Nov-21 22:18:43.974901
+------
+2025-Nov-21 22:18:43.974901
+> [3/7] RUN apt-get update && apt-get install -y     build-essential     curl     software-properties-common     git     && rm -rf /var/lib/apt/lists/*:
+2025-Nov-21 22:18:43.974901
+0.137 Hit:1 http://deb.debian.org/debian trixie InRelease
+2025-Nov-21 22:18:43.974901
+0.137 Get:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]
+2025-Nov-21 22:18:43.974901
+0.139 Get:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]
+2025-Nov-21 22:18:43.974901
+0.164 Get:4 http://deb.debian.org/debian trixie/main amd64 Packages [9670 kB]
+2025-Nov-21 22:18:43.974901
+0.276 Get:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [5412 B]
+2025-Nov-21 22:18:43.974901
+0.276 Get:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [71.8 kB]
+2025-Nov-21 22:18:43.974901
+2025-Nov-21 22:18:43.974901
+2025-Nov-21 22:18:43.974901
+2025-Nov-21 22:18:43.974901
+1.958 E: Unable to locate package software-properties-common
+2025-Nov-21 22:18:43.974901
+------
+2025-Nov-21 22:18:43.974901
+2025-Nov-21 22:18:43.974901
+3 warnings found (use docker --debug to expand):
+2025-Nov-21 22:18:43.974901
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "POSTGRES_PASSWORD") (line 4)
+2025-Nov-21 22:18:43.974901
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "SESSION_SECRET") (line 6)
+2025-Nov-21 22:18:43.974901
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "OPENROUTER_API_KEY") (line 2)
+2025-Nov-21 22:18:43.974901
+Dockerfile:18
+2025-Nov-21 22:18:43.974901
+--------------------
+2025-Nov-21 22:18:43.974901
+17 |     # Install system dependencies including curl for healthcheck
+2025-Nov-21 22:18:43.974901
+18 | >>> RUN apt-get update && apt-get install -y \
+2025-Nov-21 22:18:43.974901
+19 | >>>     build-essential \
+2025-Nov-21 22:18:43.974901
+20 | >>>     curl \
+2025-Nov-21 22:18:43.974901
+21 | >>>     software-properties-common \
+2025-Nov-21 22:18:43.974901
+22 | >>>     git \
+2025-Nov-21 22:18:43.974901
+23 | >>>     && rm -rf /var/lib/apt/lists/*
+2025-Nov-21 22:18:43.974901
+24 |
+2025-Nov-21 22:18:43.974901
+--------------------
+2025-Nov-21 22:18:43.974901
+ERROR: failed to build: failed to solve: process "/bin/sh -c apt-get update && apt-get install -y     build-essential     curl     software-properties-common     git     && rm -rf /var/lib/apt/lists/*" did not complete successfully: exit code: 100
+2025-Nov-21 22:18:43.974901
+exit status 1
+2025-Nov-21 22:18:43.979926
+Deployment failed. Removing the new version of your application.
+2025-Nov-21 22:18:44.465040
+Gracefully shutting down build container: fgk8404okgs04g4ok4swowcc
+2025-Nov-21 22:18:44.597431
+[CMD]: sudo docker stop --time=30 fgk8404okgs04g4ok4swowcc
+2025-Nov-21 22:18:44.597431
+Flag --time has been deprecated, use --timeout instead
+2025-Nov-21 22:18:44.753152
+fgk8404okgs04g4ok4swowcc
+2025-Nov-21 22:18:44.872996
+[CMD]: sudo docker rm -f fgk8404okgs04g4ok4swowcc
+2025-Nov-21 22:18:44.872996
+Error response from daemon: No such container: fgk8404okgs04g4ok4swowcc

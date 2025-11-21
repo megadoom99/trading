@@ -1,0 +1,43 @@
+Deployment is Failed.
+
+
+2025-Nov-21 22:16:41.878793
+Starting deployment of megadoom99/trading:main to localhost.
+2025-Nov-21 22:16:42.083371
+Preparing container with helper image: ghcr.io/coollabsio/coolify-helper:1.0.12
+2025-Nov-21 22:16:42.193966
+[CMD]: sudo docker stop --time=30 n844s0s08o8c84wocw804oss
+2025-Nov-21 22:16:42.193966
+Flag --time has been deprecated, use --timeout instead
+2025-Nov-21 22:16:42.195257
+Error response from daemon: No such container: n844s0s08o8c84wocw804oss
+2025-Nov-21 22:16:42.308305
+[CMD]: sudo docker rm -f n844s0s08o8c84wocw804oss
+2025-Nov-21 22:16:42.308305
+Error response from daemon: No such container: n844s0s08o8c84wocw804oss
+2025-Nov-21 22:16:42.448167
+[CMD]: sudo docker run -d --network coolify --name n844s0s08o8c84wocw804oss  --rm -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/coollabsio/coolify-helper:1.0.12
+2025-Nov-21 22:16:42.448167
+b6565c45c9cd4da0d5812d186adfe4c1d17e8685ef91a7ec94189c06e66aa7bd
+2025-Nov-21 22:16:43.079085
+[CMD]: sudo docker exec n844s0s08o8c84wocw804oss bash -c 'GIT_SSH_COMMAND="ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git ls-remote https://github.com/megadoom99/trading refs/heads/main'
+2025-Nov-21 22:16:43.079085
+fatal: could not read Username for 'https://github.com': No such device or address
+2025-Nov-21 22:16:43.125875
+Oops something is not okay, are you okay? 😢
+2025-Nov-21 22:16:43.131244
+fatal: could not read Username for 'https://github.com': No such device or address
+2025-Nov-21 22:16:43.136669
+Deployment failed. Removing the new version of your application.
+2025-Nov-21 22:16:43.272005
+Gracefully shutting down build container: n844s0s08o8c84wocw804oss
+2025-Nov-21 22:16:43.376514
+[CMD]: sudo docker stop --time=30 n844s0s08o8c84wocw804oss
+2025-Nov-21 22:16:43.376514
+Flag --time has been deprecated, use --timeout instead
+2025-Nov-21 22:16:43.528034
+n844s0s08o8c84wocw804oss
+2025-Nov-21 22:16:43.663261
+[CMD]: sudo docker rm -f n844s0s08o8c84wocw804oss
+2025-Nov-21 22:16:43.663261
+Error response from daemon: No such container: n844s0s08o8c84wocw804oss
