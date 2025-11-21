@@ -15,6 +15,16 @@ A comprehensive, AI-powered day trading application that integrates with Interac
 - Watchlist management
 
 ## Recent Updates (Latest Session)
+- **✅ Automatic SQL-Based Migration System**
+  - Implemented production-safe database migrations with full data preservation
+  - Migration 001 fixes broken production schema (trades created before users)
+  - Automatic backup → recreate → restore → orphan assignment workflow
+  - Orphaned trades automatically assigned to admin user (keeps data queryable)
+  - Migrations run on every app startup before database initialization
+  - Idempotent and transactional (safe to run multiple times, rolls back on error)
+  - Schema tracking via `schema_migrations` table
+  - Zero data loss on production redeployments
+  - See DEPLOYMENT.md for detailed migration workflow and examples
 - **✅ Single-User Authentication Mode**
   - Converted from multi-user to single-user mode for personal trading use
   - Admin credentials configured via environment variables (ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_PASSWORD)
@@ -52,6 +62,7 @@ A comprehensive, AI-powered day trading application that integrates with Interac
 ### Core Modules
 - **config.py**: Centralized configuration with environment variables including admin credentials
 - **auth_manager.py**: Single-user authentication with auto-admin creation and bcrypt password hashing
+- **migrations_manager.py**: SQL-based migration system with automatic schema updates
 - **ibkr_manager.py**: IBKR API connection, market data, order execution
 - **openrouter_client.py**: Multi-model AI client with automatic fallbacks
 - **ai_trading_agent.py**: Autonomous trading logic and signal generation

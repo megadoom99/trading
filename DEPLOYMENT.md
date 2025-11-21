@@ -166,7 +166,95 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 
 ### 3. Database Migrations
 
-The app auto-initializes the database schema on first run. No manual migrations needed.
+**The app now uses an automatic SQL-based migration system** that safely handles schema updates on every redeployment.
+
+#### How It Works
+
+On every application startup:
+1. **Migrations run FIRST** - Creates/updates all database tables
+2. **Admin user created** - Using credentials from environment variables
+3. **Orphan repair** - Assigns any legacy trades to admin user
+4. **App starts** - Ready to use
+
+#### Migration System Features
+
+✅ **Automatic on Every Deploy** - No manual intervention needed  
+✅ **Data Preservation** - Never loses existing data during schema updates  
+✅ **Idempotent** - Safe to run multiple times  
+✅ **Tracked** - `schema_migrations` table tracks applied migrations  
+✅ **Transactional** - Rolls back on any error  
+
+#### Production Database Upgrade
+
+When redeploying to Coolify with schema changes:
+
+1. **Push to GitHub** - Your code changes trigger Coolify redeploy
+2. **Auto-migration** - App runs migrations on startup:
+   - Backs up existing data (e.g., trades table)
+   - Recreates tables with correct foreign key constraints
+   - Restores all data
+   - Assigns orphaned records to admin user
+3. **Zero downtime** - Users can login immediately after deployment
+4. **Data intact** - All historical trades preserved and queryable
+
+#### Broken Production Database Fix
+
+If your production database has schema errors (e.g., trades created before users):
+
+- **Migration 001** automatically fixes it:
+  - Backs up all trade data
+  - Drops broken tables
+  - Recreates with proper foreign key constraints
+  - Restores all data
+  - Assigns orphaned trades to admin
+  - Adds indexes for performance
+
+**No manual intervention required!** Just redeploy and the migration handles everything.
+
+#### Adding New Migrations
+
+For future schema changes:
+
+1. Create new SQL file: `migrations/002_your_change.sql`
+2. Write idempotent SQL (use `IF NOT EXISTS`, `DO $$ ... END $$;`)
+3. Push to GitHub
+4. Coolify redeploys and applies the new migration automatically
+
+Example migration template:
+```sql
+-- Migration: 002_add_new_feature.sql
+-- Description: Add new feature table
+
+CREATE TABLE IF NOT EXISTS feature_data (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_feature_user_id ON feature_data(user_id);
+```
+
+#### Monitoring Migrations
+
+Check application logs during deployment:
+```
+INFO:migrations_manager:Applied migrations: 1
+INFO:migrations_manager:✅ Database schema is up to date
+INFO:__main__:Admin user created successfully
+INFO:__main__:Assigned 0 orphaned trades to admin user
+```
+
+#### Database Schema
+
+Current tables after migration 001:
+- **users** - Admin account and authentication
+- **user_settings** - User preferences and configuration
+- **trades** - Trade history with FK to users
+- **alerts** - Price alerts and notifications
+- **schema_migrations** - Migration tracking
+
+All foreign key constraints are properly enforced for data integrity.
 
 ---
 
