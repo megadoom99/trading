@@ -1,0 +1,59 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Environment & Secrets
+.env
+.env.*
+.streamlit/secrets.toml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs & Temp
+*.log
+logs/
+tmp/
+/tmp/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Replit specific
+.replit
+replit.nix
+.config/
+.cache/
+.upm/
+
+# Documentation (optional - exclude if you want smaller image)
+*.md
+!DEPLOYMENT.md
+
+# Tests (optional)
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
