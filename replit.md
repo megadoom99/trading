@@ -15,6 +15,12 @@ A comprehensive, AI-powered day trading application that integrates with Interac
 - Watchlist management
 
 ## Recent Updates (Latest Session)
+- **✅ Implemented Trade Journal & Analytics (Phase 2)**
+  - PostgreSQL database integration with automated trade logging
+  - Comprehensive analytics dashboard with P&L charts, win/loss ratios, symbol performance
+  - AI vs Manual trading performance comparison
+  - Trade history with filtering and export capabilities
+  - AI-generated performance insights
 - Fixed event loop compatibility with Streamlit threading
 - Implemented robust market data retrieval with fallback mechanisms
 - Added action normalization for proper risk validation across all order types
@@ -30,6 +36,8 @@ A comprehensive, AI-powered day trading application that integrates with Interac
 - **ai_trading_agent.py**: Autonomous trading logic and signal generation
 - **market_data_manager.py**: Real-time data streaming and historical analysis
 - **risk_manager.py**: Position sizing, risk validation, stop-loss/take-profit
+- **database_manager.py**: PostgreSQL integration for trade logging and history
+- **trade_analytics.py**: Analytics engine with charts and performance metrics
 - **app.py**: Streamlit UI with professional trading interface
 
 ### Key Features
@@ -43,6 +51,12 @@ A comprehensive, AI-powered day trading application that integrates with Interac
    - Positional Trading: Multi-day holds with GTC orders
 4. **Risk Management**: Configurable position limits, stop-loss, take-profit
 5. **Market Analysis**: Real-time sentiment from Finnhub, historical price analysis
+6. **Trade Journal & Analytics**: 
+   - Automatic logging of all trades (AI and manual) to PostgreSQL
+   - Comprehensive performance metrics and statistics
+   - Interactive charts: P&L over time, win/loss ratio, symbol performance
+   - AI vs Manual trading comparison
+   - AI-generated insights on trading patterns
 
 ## Setup Required
 

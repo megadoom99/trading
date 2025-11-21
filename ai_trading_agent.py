@@ -22,10 +22,11 @@ class TradingSignal:
     stop_loss_pct: float
 
 class AITradingAgent:
-    def __init__(self, openrouter_client, ibkr_manager, config):
+    def __init__(self, openrouter_client, ibkr_manager, config, db_manager=None):
         self.ai_client = openrouter_client
         self.ibkr = ibkr_manager
         self.config = config
+        self.db_mgr = db_manager
         self.execution_mode = 'manual_approval'
         self.trading_horizon = 'day_trading'
         self.margin_enabled = False
@@ -36,6 +37,7 @@ class AITradingAgent:
         self.active = False
         self.watchlist = []
         self.price_history = {}
+        self.active_trades = {}
         
     def set_execution_mode(self, mode: str):
         if mode in ['full_autonomy', 'manual_approval', 'observation_only']:
@@ -217,6 +219,7 @@ class AITradingAgent:
             logger.info(f"Executed: {signal.action} {signal.quantity} {signal.symbol}")
             
             market_data = self.ibkr.get_market_data(signal.symbol)
+            entry_price = 0
             if market_data:
                 entry_price = market_data.get('last', 0)
                 if entry_price > 0:
@@ -224,5 +227,23 @@ class AITradingAgent:
                     take_profit_price = entry_price * (1 + signal.profit_target_pct / 100)
                     
                     logger.info(f"Stop Loss: ${stop_loss_price:.2f}, Take Profit: ${take_profit_price:.2f}")
+            
+            if self.db_mgr:
+                try:
+                    trade_id = self.db_mgr.log_trade(
+                        symbol=signal.symbol,
+                        action=signal.action,
+                        quantity=signal.quantity,
+                        entry_price=entry_price,
+                        order_type=signal.order_type,
+                        agent_generated=True,
+                        signal_confidence=signal.confidence,
+                        reasoning=signal.reasoning
+                    )
+                    
+                    self.active_trades[result['order_id']] = trade_id
+                    logger.info(f"Trade logged to database: trade_id={trade_id}, order_id={result['order_id']}")
+                except Exception as e:
+                    logger.error(f"Failed to log trade to database: {e}")
         
         return result
