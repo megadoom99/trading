@@ -78,6 +78,9 @@ Navigate to **Environment Variables** tab and add the following:
 | `POSTGRES_PASSWORD` | `your_secure_password_here` | PostgreSQL database password |
 | `SESSION_SECRET` | `your_random_secret_key` | Session encryption key (generate random string) |
 | `OPENROUTER_API_KEY` | `sk-or-v1-...` | Your OpenRouter API key |
+| `ADMIN_USERNAME` | `admin` | Login username (single-user mode) |
+| `ADMIN_EMAIL` | `admin@trading.local` | Admin email address |
+| `ADMIN_PASSWORD` | `your_secure_password` | Login password (change from default!) |
 
 #### Optional Variables
 
@@ -97,7 +100,7 @@ Navigate to **Environment Variables** tab and add the following:
 1. Click "Add Environment Variable"
 2. Enter Name and Value
 3. Click "Update" to save each one
-4. Mark `POSTGRES_PASSWORD`, `SESSION_SECRET`, `OPENROUTER_API_KEY` as **Secret** (eye icon)
+4. Mark `POSTGRES_PASSWORD`, `SESSION_SECRET`, `OPENROUTER_API_KEY`, and `ADMIN_PASSWORD` as **Secret** (eye icon)
 
 ### Step 4: Configure Docker Compose (Optional - Full Stack)
 
@@ -140,10 +143,15 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 
 ## Post-Deployment Configuration
 
-### 1. Initial User Setup
+### 1. Single-User Login
+**This app operates in single-user mode.** Your admin credentials are set via environment variables.
+
 - Navigate to your deployed app
-- Create your first user account via the registration page
-- Configure your personal API keys in Settings
+- Login with the credentials you set:
+  - Username: Value of `ADMIN_USERNAME` (default: `admin`)
+  - Password: Value of `ADMIN_PASSWORD` (⚠️ **Change from default!**)
+- The admin user is automatically created on first startup
+- No signup page - credentials are managed via environment variables only
 
 ### 2. IBKR Connection Setup
 

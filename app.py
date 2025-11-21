@@ -1336,19 +1336,20 @@ def main():
     if not st.session_state.db_mgr:
         try:
             st.session_state.db_mgr = DatabaseManager()
-            
-            # Initialize admin user from environment variables (single-user mode)
-            if not st.session_state.auth_mgr:
-                st.session_state.auth_mgr = AuthManager(st.session_state.db_mgr)
-                st.session_state.auth_mgr.ensure_admin_user(
-                    username=config.admin.username,
-                    email=config.admin.email,
-                    password=config.admin.password
-                )
         except Exception as e:
             st.error("Database connection failed. Please check DATABASE_URL configuration.")
             logger.error(f"Database init failed: {e}")
             return
+    
+    # Initialize admin user from environment variables (single-user mode)
+    # This runs once per session to ensure admin user exists
+    if st.session_state.db_mgr and not st.session_state.auth_mgr:
+        st.session_state.auth_mgr = AuthManager(st.session_state.db_mgr)
+        st.session_state.auth_mgr.ensure_admin_user(
+            username=config.admin.username,
+            email=config.admin.email,
+            password=config.admin.password
+        )
     
     if not st.session_state.authenticated:
         render_login()
