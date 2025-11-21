@@ -1,0 +1,118 @@
+Logs
+Server: localhost
+postgres-sosc4gsc8gkgwwsk8gs8so4g-231431674233
+Only Show Number of Lines
+*
+100
+Refresh
+Stream Logs
+Include Timestamps
+
+PostgreSQL Database directory appears to contain a database; Skipping initialization
+
+2025-11-21 23:15:14.024 UTC [1] LOG:  starting PostgreSQL 15.14 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+2025-11-21 23:15:14.025 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2025-11-21 23:15:14.025 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2025-11-21 23:15:14.026 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2025-11-21 23:15:14.030 UTC [29] LOG:  database system was shut down at 2025-11-21 23:15:12 UTC
+2025-11-21 23:15:14.035 UTC [1] LOG:  database system is ready to accept connections
+2025-11-21 23:15:38.806 UTC [48] ERROR:  relation "users" does not exist
+2025-11-21 23:15:38.806 UTC [48] STATEMENT:  
+	                        CREATE TABLE IF NOT EXISTS trades (
+	                            id SERIAL PRIMARY KEY,
+	                            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+	                            trade_timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
+	                            symbol VARCHAR(10) NOT NULL,
+	                            action VARCHAR(20) NOT NULL,
+	                            quantity INTEGER NOT NULL,
+	                            order_type VARCHAR(20) NOT NULL,
+	                            entry_price DECIMAL(10, 2),
+	                            exit_price DECIMAL(10, 2),
+	                            stop_loss DECIMAL(10, 2),
+	                            take_profit DECIMAL(10, 2),
+	                            pnl DECIMAL(12, 2),
+	                            pnl_pct DECIMAL(8, 4),
+	                            commission DECIMAL(8, 2),
+	                            order_id INTEGER,
+	                            status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
+	                            trading_mode VARCHAR(10) NOT NULL,
+	                            agent_generated BOOLEAN DEFAULT FALSE,
+	                            ai_reasoning TEXT,
+	                            confidence DECIMAL(5, 4),
+	                            entry_timestamp TIMESTAMP,
+	                            exit_timestamp TIMESTAMP,
+	                            holding_period_seconds INTEGER,
+	                            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+	                        )
+	                    
+2025-11-21 23:15:38.815 UTC [49] ERROR:  relation "users" does not exist at character 41
+2025-11-21 23:15:38.815 UTC [49] STATEMENT:  
+	                        SELECT id FROM users WHERE username = 'andreicebotari'
+	                    
+2025-11-21 23:15:57.574 UTC [65] ERROR:  relation "users" does not exist at character 97
+2025-11-21 23:15:57.574 UTC [65] STATEMENT:  
+	                        SELECT id, username, email, password_hash
+	                        FROM users
+	                        WHERE username = 'andreicebotari'
+	                    
+2025-11-21 23:16:45.196 UTC [103] ERROR:  relation "users" does not exist at character 97
+2025-11-21 23:16:45.196 UTC [103] STATEMENT:  
+	                        SELECT id, username, email, password_hash
+	                        FROM users
+	                        WHERE username = 'andreicebotari'
+	                    
+app-sosc4gsc8gkgwwsk8gs8so4g-231431681468
+Only Show Number of Lines
+*
+100
+Refresh
+Stream Logs
+Include Timestamps
+
+2025-11-21 23:15:25.029 
+Warning: the config option 'server.enableCORS=false' is not compatible with
+'server.enableXsrfProtection=true'.
+As a result, 'server.enableCORS' is being overridden to 'true'.
+
+More information:
+In order to protect against CSRF attacks, we send a cookie with each request.
+To do so, we must specify allowable origins, which places a restriction on
+cross-origin resource sharing.
+
+If cross origin resource sharing is required, please disable server.enableXsrfProtection.
+            
+ERROR:database_manager:Database error: relation "users" does not exist
+
+ERROR:database_manager:Failed to initialize database schema: relation "users" does not exist
+
+ERROR:database_manager:Database error: relation "users" does not exist
+LINE 2:                         SELECT id FROM users WHERE username ...
+                                               ^
+
+ERROR:auth_manager:Error ensuring admin user: relation "users" does not exist
+LINE 2:                         SELECT id FROM users WHERE username ...
+                                               ^
+
+ERROR:database_manager:Database error: relation "users" does not exist
+LINE 3:                         FROM users
+                                     ^
+
+ERROR:auth_manager:Authentication error: relation "users" does not exist
+LINE 3:                         FROM users
+                                     ^
+
+ERROR:database_manager:Database error: relation "users" does not exist
+LINE 3:                         FROM users
+                                     ^
+
+ERROR:auth_manager:Authentication error: relation "users" does not exist
+LINE 3:                         FROM users
+                                     ^
+
+
+Collecting usage statistics. To deactivate, set browser.gatherUsageStats to false.
+
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://0.0.0.0:8501
