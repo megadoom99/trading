@@ -13,7 +13,6 @@ class DatabaseManager:
         self.database_url = os.getenv('DATABASE_URL')
         if not self.database_url:
             logger.warning("DATABASE_URL not set, trade journal will not be available")
-        self._init_schema()
     
     @contextmanager
     def get_connection(self):
@@ -31,104 +30,6 @@ class DatabaseManager:
             if conn:
                 conn.close()
     
-    def _init_schema(self):
-        if not self.database_url:
-            return
-        
-        try:
-            with self.get_connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("""
-                        CREATE TABLE IF NOT EXISTS users (
-                            id SERIAL PRIMARY KEY,
-                            username VARCHAR(50) UNIQUE NOT NULL,
-                            email VARCHAR(255) UNIQUE NOT NULL,
-                            password_hash VARCHAR(255) NOT NULL,
-                            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                            last_login TIMESTAMP
-                        )
-                    """)
-                    
-                    cur.execute("""
-                        CREATE TABLE IF NOT EXISTS trades (
-                            id SERIAL PRIMARY KEY,
-                            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                            trade_timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
-                            symbol VARCHAR(10) NOT NULL,
-                            action VARCHAR(20) NOT NULL,
-                            quantity INTEGER NOT NULL,
-                            order_type VARCHAR(20) NOT NULL,
-                            entry_price DECIMAL(10, 2),
-                            exit_price DECIMAL(10, 2),
-                            stop_loss DECIMAL(10, 2),
-                            take_profit DECIMAL(10, 2),
-                            pnl DECIMAL(12, 2),
-                            pnl_pct DECIMAL(8, 4),
-                            commission DECIMAL(8, 2),
-                            order_id INTEGER,
-                            status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
-                            trading_mode VARCHAR(10) NOT NULL,
-                            agent_generated BOOLEAN DEFAULT FALSE,
-                            ai_reasoning TEXT,
-                            confidence DECIMAL(5, 4),
-                            entry_timestamp TIMESTAMP,
-                            exit_timestamp TIMESTAMP,
-                            holding_period_seconds INTEGER,
-                            created_at TIMESTAMP NOT NULL DEFAULT NOW()
-                        )
-                    """)
-                    
-                    cur.execute("""
-                        CREATE TABLE IF NOT EXISTS user_settings (
-                            id SERIAL PRIMARY KEY,
-                            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                            openrouter_api_key TEXT,
-                            finnhub_api_key TEXT,
-                            preferred_model VARCHAR(100),
-                            ibkr_host VARCHAR(255) DEFAULT '127.0.0.1',
-                            ibkr_port INTEGER DEFAULT 7497,
-                            default_currency VARCHAR(3) DEFAULT 'USD',
-                            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                            updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                            UNIQUE(user_id)
-                        )
-                    """)
-                    
-                    cur.execute("""
-                        CREATE TABLE IF NOT EXISTS alerts (
-                            id SERIAL PRIMARY KEY,
-                            symbol VARCHAR(10) NOT NULL,
-                            alert_type VARCHAR(20) NOT NULL,
-                            condition_type VARCHAR(20) NOT NULL,
-                            target_value DECIMAL(12, 4) NOT NULL,
-                            current_value DECIMAL(12, 4),
-                            is_active BOOLEAN DEFAULT TRUE,
-                            triggered BOOLEAN DEFAULT FALSE,
-                            triggered_at TIMESTAMP,
-                            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                            notes TEXT
-                        )
-                    """)
-                    
-                    cur.execute("""
-                        CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)
-                    """)
-                    cur.execute("""
-                        CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)
-                    """)
-                    cur.execute("""
-                        CREATE INDEX IF NOT EXISTS idx_trades_timestamp ON trades(trade_timestamp DESC)
-                    """)
-                    cur.execute("""
-                        CREATE INDEX IF NOT EXISTS idx_alerts_symbol ON alerts(symbol)
-                    """)
-                    cur.execute("""
-                        CREATE INDEX IF NOT EXISTS idx_alerts_active ON alerts(is_active) WHERE is_active = TRUE
-                    """)
-                    
-                    logger.info("Database schema initialized successfully")
-        except Exception as e:
-            logger.error(f"Failed to initialize database schema: {e}")
     
     def log_trade(self, symbol: str, action: str, quantity: int, entry_price: float,
                   order_type: str = 'MKT', order_id: int = None, 

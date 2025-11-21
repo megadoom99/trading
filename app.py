@@ -13,6 +13,8 @@ from risk_manager import RiskManager
 from database_manager import DatabaseManager
 from trade_analytics import TradeAnalytics
 from auth_manager import AuthManager
+from migrations_manager import MigrationsManager
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1335,21 +1337,67 @@ def main():
     
     if not st.session_state.db_mgr:
         try:
-            st.session_state.db_mgr = DatabaseManager()
+            database_url = os.getenv('DATABASE_URL')
+            if database_url:
+                # Step 1: Run database migrations FIRST (creates all tables)
+                logger.info("Running database migrations...")
+                migrations_mgr = MigrationsManager(database_url)
+                migrations_mgr.run_migrations()
+                
+                # Step 2: Create DatabaseManager
+                st.session_state.db_mgr = DatabaseManager()
+                
+                # Step 3: Create admin user (now all tables exist)
+                if not st.session_state.auth_mgr:
+                    st.session_state.auth_mgr = AuthManager(st.session_state.db_mgr)
+                    st.session_state.auth_mgr.ensure_admin_user(
+                        username=config.admin.username,
+                        email=config.admin.email,
+                        password=config.admin.password
+                    )
+                    logger.info("Admin user created successfully")
+                
+                # Step 4: Repair orphaned trades - assign them to admin
+                # This handles legacy trades from broken production DB
+                import psycopg2
+                try:
+                    conn = psycopg2.connect(database_url)
+                    cur = conn.cursor()
+                    
+                    # Get admin user ID
+                    cur.execute("SELECT id FROM users WHERE username = %s", (config.admin.username,))
+                    admin_row = cur.fetchone()
+                    
+                    if admin_row:
+                        admin_id = admin_row[0]
+                        
+                        # Assign orphaned trades to admin
+                        cur.execute("""
+                            UPDATE trades 
+                            SET user_id = %s 
+                            WHERE user_id IS NULL
+                        """, (admin_id,))
+                        
+                        orphan_count = cur.rowcount
+                        if orphan_count > 0:
+                            logger.info(f"Assigned {orphan_count} orphaned trades to admin user")
+                        
+                        conn.commit()
+                    
+                    cur.close()
+                    conn.close()
+                except Exception as e:
+                    logger.warning(f"Could not repair orphaned trades: {e}")
+            else:
+                st.session_state.db_mgr = DatabaseManager()
         except Exception as e:
             st.error("Database connection failed. Please check DATABASE_URL configuration.")
             logger.error(f"Database init failed: {e}")
             return
     
-    # Initialize admin user from environment variables (single-user mode)
-    # This runs once per session to ensure admin user exists
+    # Initialize auth manager if not already done
     if st.session_state.db_mgr and not st.session_state.auth_mgr:
         st.session_state.auth_mgr = AuthManager(st.session_state.db_mgr)
-        st.session_state.auth_mgr.ensure_admin_user(
-            username=config.admin.username,
-            email=config.admin.email,
-            password=config.admin.password
-        )
     
     if not st.session_state.authenticated:
         render_login()
