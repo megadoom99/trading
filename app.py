@@ -109,58 +109,28 @@ def render_login():
         st.title("📈 IBKR AI Trading Agent")
         st.markdown("##")
         
-        tab1, tab2 = st.tabs(["Login", "Sign Up"])
+        st.subheader("Login")
+        login_username = st.text_input("Username", key="login_username")
+        login_password = st.text_input("Password", type="password", key="login_password")
         
-        with tab1:
-            st.subheader("Login")
-            login_username = st.text_input("Username", key="login_username")
-            login_password = st.text_input("Password", type="password", key="login_password")
-            
-            if st.button("Login", type="primary", use_container_width=True):
-                if not login_username or not login_password:
-                    st.error("Please enter both username and password")
+        if st.button("Login", type="primary", use_container_width=True):
+            if not login_username or not login_password:
+                st.error("Please enter both username and password")
+            else:
+                if not st.session_state.db_mgr:
+                    st.error("Database not available. Please check configuration.")
                 else:
-                    if not st.session_state.db_mgr:
-                        st.error("Database not available. Please check configuration.")
+                    if not st.session_state.auth_mgr:
+                        st.session_state.auth_mgr = AuthManager(st.session_state.db_mgr)
+                    
+                    user = st.session_state.auth_mgr.authenticate(login_username, login_password)
+                    if user:
+                        st.session_state.authenticated = True
+                        st.session_state.user = user
+                        st.success(f"Welcome back, {user['username']}!")
+                        st.rerun()
                     else:
-                        if not st.session_state.auth_mgr:
-                            st.session_state.auth_mgr = AuthManager(st.session_state.db_mgr)
-                        
-                        user = st.session_state.auth_mgr.authenticate(login_username, login_password)
-                        if user:
-                            st.session_state.authenticated = True
-                            st.session_state.user = user
-                            st.success(f"Welcome back, {user['username']}!")
-                            st.rerun()
-                        else:
-                            st.error("Invalid username or password")
-        
-        with tab2:
-            st.subheader("Create Account")
-            signup_username = st.text_input("Username", key="signup_username")
-            signup_email = st.text_input("Email", key="signup_email")
-            signup_password = st.text_input("Password", type="password", key="signup_password")
-            signup_password_confirm = st.text_input("Confirm Password", type="password", key="signup_password_confirm")
-            
-            if st.button("Create Account", type="primary", use_container_width=True):
-                if not signup_username or not signup_email or not signup_password:
-                    st.error("Please fill in all fields")
-                elif signup_password != signup_password_confirm:
-                    st.error("Passwords do not match")
-                elif len(signup_password) < 6:
-                    st.error("Password must be at least 6 characters")
-                else:
-                    if not st.session_state.db_mgr:
-                        st.error("Database not available. Please check configuration.")
-                    else:
-                        if not st.session_state.auth_mgr:
-                            st.session_state.auth_mgr = AuthManager(st.session_state.db_mgr)
-                        
-                        user_id = st.session_state.auth_mgr.create_user(signup_username, signup_email, signup_password)
-                        if user_id:
-                            st.success("Account created successfully! Please login.")
-                        else:
-                            st.error("Failed to create account. Username or email may already exist.")
+                        st.error("Invalid username or password")
 
 def format_percentage_with_currency(percentage: float, reference_price: float = 100.0, usd_to_gbp: float = 0.80) -> str:
     """
@@ -1366,6 +1336,15 @@ def main():
     if not st.session_state.db_mgr:
         try:
             st.session_state.db_mgr = DatabaseManager()
+            
+            # Initialize admin user from environment variables (single-user mode)
+            if not st.session_state.auth_mgr:
+                st.session_state.auth_mgr = AuthManager(st.session_state.db_mgr)
+                st.session_state.auth_mgr.ensure_admin_user(
+                    username=config.admin.username,
+                    email=config.admin.email,
+                    password=config.admin.password
+                )
         except Exception as e:
             st.error("Database connection failed. Please check DATABASE_URL configuration.")
             logger.error(f"Database init failed: {e}")
