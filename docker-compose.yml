@@ -25,6 +25,8 @@ services:
       dockerfile: Dockerfile
     container_name: trading_app
     restart: unless-stopped
+    ports:
+      - "8501:8501"
     depends_on:
       postgres:
         condition: service_healthy
