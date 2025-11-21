@@ -51,8 +51,8 @@ class TradeAnalytics:
         
         return fig
     
-    def get_win_loss_chart(self):
-        stats = self.db.get_trade_statistics()
+    def get_win_loss_chart(self, user_id: int = None):
+        stats = self.db.get_trade_statistics(user_id=user_id)
         if not stats or stats.get('total_trades', 0) == 0:
             return None
         

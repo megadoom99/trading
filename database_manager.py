@@ -221,29 +221,22 @@ class DatabaseManager:
         if not self.database_url:
             return []
         
+        if user_id is None:
+            logger.error("SECURITY: get_trade_history called without user_id - this could expose cross-user data")
+            return []
+        
         try:
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    conditions = []
-                    params = []
-                    
-                    if user_id:
-                        conditions.append("user_id = %s")
-                        params.append(user_id)
+                    params = [user_id]
+                    query = "SELECT * FROM trades WHERE user_id = %s"
                     
                     if symbol:
-                        conditions.append("symbol = %s")
+                        query += " AND symbol = %s"
                         params.append(symbol)
                     
-                    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+                    query += " ORDER BY trade_timestamp DESC LIMIT %s"
                     params.append(limit)
-                    
-                    query = f"""
-                        SELECT * FROM trades
-                        {where_clause}
-                        ORDER BY trade_timestamp DESC
-                        LIMIT %s
-                    """
                     
                     cur.execute(query, params)
                     return [dict(row) for row in cur.fetchall()]
@@ -255,15 +248,16 @@ class DatabaseManager:
         if not self.database_url:
             return {}
         
+        if user_id is None:
+            logger.error("SECURITY: get_trade_statistics called without user_id - this could expose cross-user data")
+            return {}
+        
         try:
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    user_filter = "AND user_id = %s" if user_id else ""
-                    params = [days]
-                    if user_id:
-                        params.append(user_id)
+                    params = [days, user_id]
                     
-                    query = f"""
+                    query = """
                         SELECT
                             COUNT(*) as total_trades,
                             COUNT(CASE WHEN pnl > 0 THEN 1 END) as winning_trades,
@@ -278,7 +272,7 @@ class DatabaseManager:
                         FROM trades
                         WHERE trade_timestamp >= NOW() - INTERVAL '%s days'
                         AND status = 'CLOSED'
-                        {user_filter}
+                        AND user_id = %s
                     """
                     
                     cur.execute(query, params)

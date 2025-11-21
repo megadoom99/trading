@@ -43,17 +43,24 @@ if 'initialized' not in st.session_state:
 
 def initialize_components():
     if not st.session_state.initialized:
+        user_settings = st.session_state.auth_mgr.get_user_settings(st.session_state.user['id']) if st.session_state.user else {}
+        
+        openrouter_key = user_settings.get('openrouter_api_key') or config.openrouter.api_key
+        finnhub_key = user_settings.get('finnhub_api_key') or config.finnhub.api_key
+        preferred_model = user_settings.get('preferred_model') or config.openrouter.default_model
+        ibkr_host = user_settings.get('ibkr_host') or config.ibkr.host
+        
         st.session_state.ibkr = IBKRManager(
-            host=config.ibkr.host,
+            host=ibkr_host,
             paper_port=config.ibkr.paper_port,
             live_port=config.ibkr.live_port,
             client_id=config.ibkr.client_id
         )
         
         st.session_state.ai_client = OpenRouterClient(
-            api_key=config.openrouter.api_key,
+            api_key=openrouter_key,
             base_url=config.openrouter.base_url,
-            default_model=config.openrouter.default_model,
+            default_model=preferred_model,
             fallback_models=config.openrouter.fallback_models
         )
         
@@ -75,7 +82,7 @@ def initialize_components():
         
         st.session_state.market_data_mgr = MarketDataManager(
             st.session_state.ibkr,
-            config.finnhub.api_key
+            finnhub_key
         )
         
         st.session_state.risk_mgr = RiskManager(st.session_state.ibkr)
@@ -663,29 +670,31 @@ def render_trade_journal():
         return
     
     user_id = st.session_state.user['id'] if st.session_state.user else None
-    stats = st.session_state.db_mgr.get_trade_statistics(user_id=user_id)
     
-    if not stats or stats.get('total_trades', 0) == 0:
+    all_trades = st.session_state.db_mgr.get_trade_history(user_id=user_id, limit=1)
+    if not all_trades or len(all_trades) == 0:
         st.info("No trade history yet. Start trading to see analytics!")
         return
+    
+    stats = st.session_state.db_mgr.get_trade_statistics(user_id=user_id) or {}
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Total Trades", stats.get('total_trades', 0))
-        st.metric("Win Rate", f"{stats.get('win_rate', 0):.1f}%")
+        st.metric("Total Trades", stats.get('total_trades') or 0)
+        st.metric("Win Rate", f"{stats.get('win_rate') or 0:.1f}%")
     
     with col2:
-        st.metric("Total P&L", f"${stats.get('total_pnl', 0):.2f}")
-        st.metric("Avg P&L", f"${stats.get('avg_pnl', 0):.2f}")
+        st.metric("Total P&L", f"${stats.get('total_pnl') or 0:.2f}")
+        st.metric("Avg P&L", f"${stats.get('avg_pnl') or 0:.2f}")
     
     with col3:
-        st.metric("Best Win", f"${stats.get('max_win', 0):.2f}")
-        st.metric("Worst Loss", f"${stats.get('max_loss', 0):.2f}")
+        st.metric("Best Win", f"${stats.get('max_win') or 0:.2f}")
+        st.metric("Worst Loss", f"${stats.get('max_loss') or 0:.2f}")
     
     with col4:
-        st.metric("Profit Factor", f"{stats.get('profit_factor', 0):.2f}")
-        avg_hold_time = stats.get('avg_hold_time_seconds', 0) or 0
+        st.metric("Profit Factor", f"{stats.get('profit_factor') or 0:.2f}")
+        avg_hold_time = stats.get('avg_hold_time_seconds') or 0
         hours = int(avg_hold_time / 3600)
         st.metric("Avg Hold Time", f"{hours}h")
     
@@ -702,7 +711,7 @@ def render_trade_journal():
                 st.plotly_chart(pnl_chart, use_container_width=True)
         
         with col_chart2:
-            win_loss_chart = st.session_state.trade_analytics.get_win_loss_chart()
+            win_loss_chart = st.session_state.trade_analytics.get_win_loss_chart(user_id=user_id)
             if win_loss_chart:
                 st.plotly_chart(win_loss_chart, use_container_width=True)
         
