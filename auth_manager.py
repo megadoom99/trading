@@ -9,6 +9,39 @@ class AuthManager:
     def __init__(self, db_manager):
         self.db = db_manager
     
+    def ensure_admin_user(self, username: str, email: str, password: str) -> bool:
+        """
+        Ensure admin user exists. Creates it if not found.
+        Called on app startup to initialize single-user system.
+        """
+        if not self.db.database_url:
+            logger.warning("Database not available. Cannot create admin user.")
+            return False
+        
+        try:
+            with self.db.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT id FROM users WHERE username = %s
+                    """, (username,))
+                    
+                    if cur.fetchone():
+                        logger.info(f"Admin user '{username}' already exists")
+                        return True
+                    
+                    logger.info(f"Creating admin user '{username}'...")
+                    user_id = self.create_user(username, email, password)
+                    
+                    if user_id:
+                        logger.info(f"Admin user created successfully (ID: {user_id})")
+                        return True
+                    else:
+                        logger.error("Failed to create admin user")
+                        return False
+        except Exception as e:
+            logger.error(f"Error ensuring admin user: {e}")
+            return False
+    
     def hash_password(self, password: str) -> str:
         salt = bcrypt.gensalt()
         hashed = bcrypt.hashpw(password.encode('utf-8'), salt)

@@ -40,6 +40,12 @@ class TradingConfig:
     default_stop_loss_pct: float = 2.0
     default_take_profit_pct: float = 5.0
     max_positions: int = 10
+
+@dataclass
+class AdminConfig:
+    username: str = os.getenv('ADMIN_USERNAME', 'admin')
+    email: str = os.getenv('ADMIN_EMAIL', 'admin@trading.local')
+    password: str = os.getenv('ADMIN_PASSWORD', 'changeme123')
     
 @dataclass
 class AppConfig:
@@ -47,6 +53,7 @@ class AppConfig:
     openrouter: OpenRouterConfig
     finnhub: FinnhubConfig
     trading: TradingConfig
+    admin: AdminConfig
     
     @classmethod
     def load(cls):
@@ -54,7 +61,8 @@ class AppConfig:
             ibkr=IBKRConfig(),
             openrouter=OpenRouterConfig(),
             finnhub=FinnhubConfig(),
-            trading=TradingConfig()
+            trading=TradingConfig(),
+            admin=AdminConfig()
         )
 
 config = AppConfig.load()

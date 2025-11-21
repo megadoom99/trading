@@ -53,6 +53,11 @@ services:
       
       # OpenRouter Model
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-anthropic/claude-3.5-sonnet}
+      
+      # Admin Credentials (Single-User Mode)
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@trading.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme123}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
       interval: 30s
