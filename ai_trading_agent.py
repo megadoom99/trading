@@ -22,11 +22,12 @@ class TradingSignal:
     stop_loss_pct: float
 
 class AITradingAgent:
-    def __init__(self, openrouter_client, ibkr_manager, config, db_manager=None):
+    def __init__(self, openrouter_client, ibkr_manager, config, db_manager=None, user_id=None):
         self.ai_client = openrouter_client
         self.ibkr = ibkr_manager
         self.config = config
         self.db_mgr = db_manager
+        self.user_id = user_id
         self.execution_mode = 'manual_approval'
         self.trading_horizon = 'day_trading'
         self.margin_enabled = False
@@ -238,7 +239,8 @@ class AITradingAgent:
                         order_type=signal.order_type,
                         agent_generated=True,
                         signal_confidence=signal.confidence,
-                        reasoning=signal.reasoning
+                        reasoning=signal.reasoning,
+                        user_id=self.user_id
                     )
                     
                     self.active_trades[result['order_id']] = trade_id

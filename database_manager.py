@@ -41,6 +41,7 @@ class DatabaseManager:
                     cur.execute("""
                         CREATE TABLE IF NOT EXISTS trades (
                             id SERIAL PRIMARY KEY,
+                            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
                             trade_timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
                             symbol VARCHAR(10) NOT NULL,
                             action VARCHAR(20) NOT NULL,
@@ -67,6 +68,33 @@ class DatabaseManager:
                     """)
                     
                     cur.execute("""
+                        CREATE TABLE IF NOT EXISTS users (
+                            id SERIAL PRIMARY KEY,
+                            username VARCHAR(50) UNIQUE NOT NULL,
+                            email VARCHAR(255) UNIQUE NOT NULL,
+                            password_hash VARCHAR(255) NOT NULL,
+                            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                            last_login TIMESTAMP
+                        )
+                    """)
+                    
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS user_settings (
+                            id SERIAL PRIMARY KEY,
+                            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                            openrouter_api_key TEXT,
+                            finnhub_api_key TEXT,
+                            preferred_model VARCHAR(100),
+                            ibkr_host VARCHAR(255) DEFAULT '127.0.0.1',
+                            ibkr_port INTEGER DEFAULT 7497,
+                            default_currency VARCHAR(3) DEFAULT 'USD',
+                            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                            updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                            UNIQUE(user_id)
+                        )
+                    """)
+                    
+                    cur.execute("""
                         CREATE TABLE IF NOT EXISTS alerts (
                             id SERIAL PRIMARY KEY,
                             symbol VARCHAR(10) NOT NULL,
@@ -82,6 +110,21 @@ class DatabaseManager:
                         )
                     """)
                     
+                    cur.execute("""
+                        DO $$ 
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM information_schema.columns 
+                                WHERE table_name = 'trades' AND column_name = 'user_id'
+                            ) THEN
+                                ALTER TABLE trades ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+                            END IF;
+                        END $$;
+                    """)
+                    
+                    cur.execute("""
+                        CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)
+                    """)
                     cur.execute("""
                         CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)
                     """)
@@ -103,7 +146,7 @@ class DatabaseManager:
                   order_type: str = 'MKT', order_id: int = None, 
                   agent_generated: bool = False, signal_confidence: float = None,
                   reasoning: str = None, stop_loss: float = None, 
-                  take_profit: float = None, trading_mode: str = None) -> Optional[int]:
+                  take_profit: float = None, trading_mode: str = None, user_id: int = None) -> Optional[int]:
         if not self.database_url:
             return None
         
@@ -115,12 +158,13 @@ class DatabaseManager:
                 with conn.cursor() as cur:
                     cur.execute("""
                         INSERT INTO trades (
-                            symbol, action, quantity, order_type, entry_price,
+                            user_id, symbol, action, quantity, order_type, entry_price,
                             stop_loss, take_profit, order_id, trading_mode,
                             agent_generated, ai_reasoning, confidence, entry_timestamp
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
                     """, (
+                        user_id,
                         symbol,
                         action,
                         quantity,
@@ -173,40 +217,53 @@ class DatabaseManager:
             logger.error(f"Failed to update trade exit: {e}")
             return False
     
-    def get_trade_history(self, limit: int = 100, symbol: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_trade_history(self, limit: int = 100, symbol: Optional[str] = None, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
         if not self.database_url:
             return []
         
         try:
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    if symbol:
-                        cur.execute("""
-                            SELECT * FROM trades
-                            WHERE symbol = %s
-                            ORDER BY trade_timestamp DESC
-                            LIMIT %s
-                        """, (symbol, limit))
-                    else:
-                        cur.execute("""
-                            SELECT * FROM trades
-                            ORDER BY trade_timestamp DESC
-                            LIMIT %s
-                        """, (limit,))
+                    conditions = []
+                    params = []
                     
+                    if user_id:
+                        conditions.append("user_id = %s")
+                        params.append(user_id)
+                    
+                    if symbol:
+                        conditions.append("symbol = %s")
+                        params.append(symbol)
+                    
+                    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+                    params.append(limit)
+                    
+                    query = f"""
+                        SELECT * FROM trades
+                        {where_clause}
+                        ORDER BY trade_timestamp DESC
+                        LIMIT %s
+                    """
+                    
+                    cur.execute(query, params)
                     return [dict(row) for row in cur.fetchall()]
         except Exception as e:
             logger.error(f"Failed to get trade history: {e}")
             return []
     
-    def get_trade_statistics(self, days: int = 30) -> Dict[str, Any]:
+    def get_trade_statistics(self, days: int = 30, user_id: Optional[int] = None) -> Dict[str, Any]:
         if not self.database_url:
             return {}
         
         try:
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute("""
+                    user_filter = "AND user_id = %s" if user_id else ""
+                    params = [days]
+                    if user_id:
+                        params.append(user_id)
+                    
+                    query = f"""
                         SELECT
                             COUNT(*) as total_trades,
                             COUNT(CASE WHEN pnl > 0 THEN 1 END) as winning_trades,
@@ -221,7 +278,10 @@ class DatabaseManager:
                         FROM trades
                         WHERE trade_timestamp >= NOW() - INTERVAL '%s days'
                         AND status = 'CLOSED'
-                    """, (days,))
+                        {user_filter}
+                    """
+                    
+                    cur.execute(query, params)
                     
                     stats = dict(cur.fetchone())
                     

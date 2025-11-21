@@ -11,8 +11,8 @@ class TradeAnalytics:
     def __init__(self, db_manager):
         self.db = db_manager
     
-    def get_pnl_chart(self, days: int = 30):
-        trades = self.db.get_trade_history(limit=1000)
+    def get_pnl_chart(self, days: int = 30, user_id: int = None):
+        trades = self.db.get_trade_history(limit=1000, user_id=user_id)
         if not trades:
             return None
         
@@ -74,8 +74,8 @@ class TradeAnalytics:
         
         return fig
     
-    def get_trade_distribution_chart(self):
-        trades = self.db.get_trade_history(limit=1000)
+    def get_trade_distribution_chart(self, user_id: int = None):
+        trades = self.db.get_trade_history(limit=1000, user_id=user_id)
         if not trades:
             return None
         
@@ -110,8 +110,8 @@ class TradeAnalytics:
         
         return fig
     
-    def get_symbol_performance(self):
-        trades = self.db.get_trade_history(limit=1000)
+    def get_symbol_performance(self, user_id: int = None):
+        trades = self.db.get_trade_history(limit=1000, user_id=user_id)
         if not trades:
             return None
         
@@ -156,8 +156,8 @@ class TradeAnalytics:
         
         return fig
     
-    def get_ai_vs_manual_stats(self):
-        trades = self.db.get_trade_history(limit=1000)
+    def get_ai_vs_manual_stats(self, user_id: int = None):
+        trades = self.db.get_trade_history(limit=1000, user_id=user_id)
         if not trades:
             return {}
         

@@ -12,6 +12,7 @@ from market_data_manager import MarketDataManager
 from risk_manager import RiskManager
 from database_manager import DatabaseManager
 from trade_analytics import TradeAnalytics
+from auth_manager import AuthManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,6 +26,9 @@ st.set_page_config(
 
 if 'initialized' not in st.session_state:
     st.session_state.initialized = False
+    st.session_state.authenticated = False
+    st.session_state.user = None
+    st.session_state.auth_mgr = None
     st.session_state.ibkr = None
     st.session_state.ai_client = None
     st.session_state.trading_agent = None
@@ -65,7 +69,8 @@ def initialize_components():
             st.session_state.ai_client,
             st.session_state.ibkr,
             config,
-            st.session_state.db_mgr
+            st.session_state.db_mgr,
+            st.session_state.user['id'] if st.session_state.user else None
         )
         
         st.session_state.market_data_mgr = MarketDataManager(
@@ -80,9 +85,103 @@ def initialize_components():
         
         st.session_state.initialized = True
 
+def render_login():
+    st.markdown("""
+        <style>
+        .login-container {
+            max-width: 400px;
+            margin: auto;
+            padding: 50px 20px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        st.title("📈 IBKR AI Trading Agent")
+        st.markdown("##")
+        
+        tab1, tab2 = st.tabs(["Login", "Sign Up"])
+        
+        with tab1:
+            st.subheader("Login")
+            login_username = st.text_input("Username", key="login_username")
+            login_password = st.text_input("Password", type="password", key="login_password")
+            
+            if st.button("Login", type="primary", use_container_width=True):
+                if not login_username or not login_password:
+                    st.error("Please enter both username and password")
+                else:
+                    if not st.session_state.db_mgr:
+                        st.error("Database not available. Please check configuration.")
+                    else:
+                        if not st.session_state.auth_mgr:
+                            st.session_state.auth_mgr = AuthManager(st.session_state.db_mgr)
+                        
+                        user = st.session_state.auth_mgr.authenticate(login_username, login_password)
+                        if user:
+                            st.session_state.authenticated = True
+                            st.session_state.user = user
+                            st.success(f"Welcome back, {user['username']}!")
+                            st.rerun()
+                        else:
+                            st.error("Invalid username or password")
+        
+        with tab2:
+            st.subheader("Create Account")
+            signup_username = st.text_input("Username", key="signup_username")
+            signup_email = st.text_input("Email", key="signup_email")
+            signup_password = st.text_input("Password", type="password", key="signup_password")
+            signup_password_confirm = st.text_input("Confirm Password", type="password", key="signup_password_confirm")
+            
+            if st.button("Create Account", type="primary", use_container_width=True):
+                if not signup_username or not signup_email or not signup_password:
+                    st.error("Please fill in all fields")
+                elif signup_password != signup_password_confirm:
+                    st.error("Passwords do not match")
+                elif len(signup_password) < 6:
+                    st.error("Password must be at least 6 characters")
+                else:
+                    if not st.session_state.db_mgr:
+                        st.error("Database not available. Please check configuration.")
+                    else:
+                        if not st.session_state.auth_mgr:
+                            st.session_state.auth_mgr = AuthManager(st.session_state.db_mgr)
+                        
+                        user_id = st.session_state.auth_mgr.create_user(signup_username, signup_email, signup_password)
+                        if user_id:
+                            st.success("Account created successfully! Please login.")
+                        else:
+                            st.error("Failed to create account. Username or email may already exist.")
+
+def format_percentage_with_currency(percentage: float, reference_price: float = 100.0, usd_to_gbp: float = 0.80) -> str:
+    """
+    Format a percentage value with USD and GBP currency annotations.
+    
+    Args:
+        percentage: The percentage value (e.g., 2.0 for 2%)
+        reference_price: Reference price in USD to calculate absolute value (default $100)
+        usd_to_gbp: USD to GBP exchange rate (default 0.80)
+    
+    Returns:
+        Formatted string like "2.0% (≈$2.00 USD / £1.60 GBP)"
+    """
+    usd_value = (percentage / 100) * reference_price
+    gbp_value = usd_value * usd_to_gbp
+    return f"{percentage}% (≈${usd_value:.2f} USD / £{gbp_value:.2f} GBP @ ${reference_price:.0f})"
+
 def render_sidebar():
     with st.sidebar:
         st.title("🤖 AI Trading Agent")
+        
+        if st.session_state.user:
+            st.write(f"👤 **{st.session_state.user['username']}**")
+            if st.button("Logout", use_container_width=True):
+                st.session_state.authenticated = False
+                st.session_state.user = None
+                st.session_state.initialized = False
+                st.rerun()
         
         st.markdown("---")
         st.subheader("Trading Mode")
@@ -114,13 +213,17 @@ def render_sidebar():
         else:
             st.error("❌ Disconnected")
             if st.button("Connect to IBKR", use_container_width=True):
-                success = st.session_state.ibkr.connect(paper_mode=st.session_state.paper_mode)
+                user_settings = st.session_state.auth_mgr.get_user_settings(st.session_state.user['id']) if st.session_state.user else {}
+                host = user_settings.get('ibkr_host', '127.0.0.1')
+                port = user_settings.get('ibkr_port', 7497)
+                
+                success = st.session_state.ibkr.connect(paper_mode=st.session_state.paper_mode, host=host, port=port)
                 
                 if success:
                     st.success("Connected successfully!")
                     st.rerun()
                 else:
-                    st.error("Connection failed. Ensure TWS/IB Gateway is running.")
+                    st.error(f"Connection failed to {host}:{port}. Ensure TWS/IB Gateway is running and API is enabled.")
         
         st.markdown("---")
         st.subheader("Agent Controls")
@@ -167,6 +270,8 @@ def render_sidebar():
             step=0.5,
             key="profit_target"
         )
+        if profit_target:
+            st.caption(format_percentage_with_currency(profit_target))
         
         position_size_usd = st.number_input(
             "Max Position Size ($)",
@@ -194,6 +299,8 @@ def render_sidebar():
             step=0.5,
             key="stop_loss_pct"
         )
+        if stop_loss_pct:
+            st.caption(format_percentage_with_currency(stop_loss_pct))
         
         st.session_state.trading_agent.set_parameters(
             profit_target=profit_target,
@@ -219,6 +326,75 @@ def render_sidebar():
             st.success("✅ Agent Active")
         else:
             st.info("⏸️ Agent Paused")
+        
+        st.markdown("---")
+        st.subheader("⚙️ Settings")
+        
+        if st.session_state.auth_mgr and st.session_state.user:
+            user_settings = st.session_state.auth_mgr.get_user_settings(st.session_state.user['id'])
+            
+            with st.expander("API Configuration", expanded=False):
+                openrouter_key = st.text_input(
+                    "OpenRouter API Key",
+                    value=user_settings.get('openrouter_api_key', '') if user_settings else '',
+                    type="password",
+                    key="openrouter_api_key_input"
+                )
+                
+                finnhub_key = st.text_input(
+                    "Finnhub API Key (Optional)",
+                    value=user_settings.get('finnhub_api_key', '') if user_settings else '',
+                    type="password",
+                    key="finnhub_api_key_input"
+                )
+                
+                models = [
+                    "anthropic/claude-3.5-sonnet",
+                    "openai/gpt-4-turbo-preview",
+                    "openai/gpt-4",
+                    "google/gemini-pro",
+                    "meta-llama/llama-3-70b-instruct"
+                ]
+                current_model = user_settings.get('preferred_model', models[0]) if user_settings else models[0]
+                
+                preferred_model = st.selectbox(
+                    "Preferred LLM Model",
+                    options=models,
+                    index=models.index(current_model) if current_model in models else 0,
+                    key="preferred_model_select"
+                )
+            
+            with st.expander("IBKR Connection", expanded=False):
+                ibkr_host = st.text_input(
+                    "IBKR Host",
+                    value=user_settings.get('ibkr_host', '127.0.0.1') if user_settings else '127.0.0.1',
+                    key="ibkr_host_input",
+                    help="Use 127.0.0.1 for local TWS or your machine's IP if connecting remotely"
+                )
+                
+                ibkr_port = st.number_input(
+                    "IBKR Port (Paper)",
+                    value=user_settings.get('ibkr_port', 7497) if user_settings else 7497,
+                    min_value=1,
+                    max_value=65535,
+                    key="ibkr_port_input",
+                    help="Default: 7497 (paper), 7496 (live)"
+                )
+            
+            if st.button("💾 Save Settings", type="primary", use_container_width=True):
+                settings_to_save = {
+                    'openrouter_api_key': openrouter_key,
+                    'finnhub_api_key': finnhub_key,
+                    'preferred_model': preferred_model,
+                    'ibkr_host': ibkr_host,
+                    'ibkr_port': ibkr_port
+                }
+                
+                if st.session_state.auth_mgr.update_user_settings(st.session_state.user['id'], settings_to_save):
+                    st.success("✅ Settings saved successfully!")
+                    st.rerun()
+                else:
+                    st.error("Failed to save settings")
 
 def render_account_summary():
     st.subheader("💼 Account Summary")
@@ -330,7 +506,8 @@ def render_manual_trading():
                             order_type=order_type,
                             agent_generated=False,
                             signal_confidence=None,
-                            reasoning="Manual trade"
+                            reasoning="Manual trade",
+                            user_id=st.session_state.user['id'] if st.session_state.user else None
                         )
                         logger.info(f"Manual trade logged to database: trade_id={trade_id}")
                     except Exception as e:
@@ -485,7 +662,8 @@ def render_trade_journal():
         st.info("Set up your PostgreSQL database connection to enable trade tracking and analytics.")
         return
     
-    stats = st.session_state.db_mgr.get_trade_statistics()
+    user_id = st.session_state.user['id'] if st.session_state.user else None
+    stats = st.session_state.db_mgr.get_trade_statistics(user_id=user_id)
     
     if not stats or stats.get('total_trades', 0) == 0:
         st.info("No trade history yet. Start trading to see analytics!")
@@ -519,7 +697,7 @@ def render_trade_journal():
         col_chart1, col_chart2 = st.columns(2)
         
         with col_chart1:
-            pnl_chart = st.session_state.trade_analytics.get_pnl_chart()
+            pnl_chart = st.session_state.trade_analytics.get_pnl_chart(user_id=user_id)
             if pnl_chart:
                 st.plotly_chart(pnl_chart, use_container_width=True)
         
@@ -528,15 +706,15 @@ def render_trade_journal():
             if win_loss_chart:
                 st.plotly_chart(win_loss_chart, use_container_width=True)
         
-        symbol_perf = st.session_state.trade_analytics.get_symbol_performance()
+        symbol_perf = st.session_state.trade_analytics.get_symbol_performance(user_id=user_id)
         if symbol_perf:
             st.plotly_chart(symbol_perf, use_container_width=True)
         
-        dist_chart = st.session_state.trade_analytics.get_trade_distribution_chart()
+        dist_chart = st.session_state.trade_analytics.get_trade_distribution_chart(user_id=user_id)
         if dist_chart:
             st.plotly_chart(dist_chart, use_container_width=True)
         
-        ai_vs_manual = st.session_state.trade_analytics.get_ai_vs_manual_stats()
+        ai_vs_manual = st.session_state.trade_analytics.get_ai_vs_manual_stats(user_id=user_id)
         if ai_vs_manual:
             st.subheader("🤖 AI vs Manual Performance")
             col_ai, col_manual = st.columns(2)
@@ -556,12 +734,13 @@ def render_trade_journal():
                 st.metric("Win Rate", f"{ai_vs_manual['manual']['win_rate']:.1f}%")
     
     with tab_history:
-        symbol_filter = st.selectbox("Filter by Symbol", ['All'] + list(set([t['symbol'] for t in st.session_state.db_mgr.get_trade_history()])))
+        all_trades = st.session_state.db_mgr.get_trade_history(user_id=user_id)
+        symbol_filter = st.selectbox("Filter by Symbol", ['All'] + list(set([t['symbol'] for t in all_trades])))
         
         if symbol_filter == 'All':
-            trades = st.session_state.db_mgr.get_trade_history(limit=100)
+            trades = st.session_state.db_mgr.get_trade_history(limit=100, user_id=user_id)
         else:
-            trades = st.session_state.db_mgr.get_trade_history(limit=100, symbol=symbol_filter)
+            trades = st.session_state.db_mgr.get_trade_history(limit=100, symbol=symbol_filter, user_id=user_id)
         
         if trades:
             df = pd.DataFrame(trades)
@@ -585,7 +764,7 @@ def render_trade_journal():
         
         if st.button("🧠 Generate AI Insights", type="primary"):
             with st.spinner("Analyzing your trading performance..."):
-                trades = st.session_state.db_mgr.get_trade_history(limit=100)
+                trades = st.session_state.db_mgr.get_trade_history(limit=100, user_id=user_id)
                 
                 if len(trades) > 0:
                     prompt = f"""Analyze this trading performance data and provide insights:
@@ -613,13 +792,25 @@ def main():
     st.markdown("""
         <style>
         .stApp {
-            background-color: #0e1117;
+            background-color: #262730;
         }
         .css-1d391kg {
-            background-color: #1e2127;
+            background-color: #262730;
         }
         </style>
     """, unsafe_allow_html=True)
+    
+    if not st.session_state.db_mgr:
+        try:
+            st.session_state.db_mgr = DatabaseManager()
+        except Exception as e:
+            st.error("Database connection failed. Please check DATABASE_URL configuration.")
+            logger.error(f"Database init failed: {e}")
+            return
+    
+    if not st.session_state.authenticated:
+        render_login()
+        return
     
     initialize_components()
     

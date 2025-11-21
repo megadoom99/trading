@@ -18,26 +18,31 @@ class IBKRManager:
         self.connected = False
         self.connection_status = "Disconnected"
         
-    def connect(self, paper_mode: bool = True):
+    def connect(self, paper_mode: bool = True, host: str = None, port: int = None):
         try:
             self.is_paper_mode = paper_mode
-            port = self.paper_port if paper_mode else self.live_port
+            
+            connect_host = host if host else self.host
+            if port:
+                connect_port = port
+            else:
+                connect_port = self.paper_port if paper_mode else self.live_port
             
             if self.ib.isConnected():
                 self.ib.disconnect()
                 import time
                 time.sleep(1)
             
-            self.ib.connect(self.host, port, clientId=self.client_id)
+            self.ib.connect(connect_host, connect_port, clientId=self.client_id)
             self.connected = True
             mode = "Paper" if paper_mode else "Live"
-            self.connection_status = f"Connected ({mode})"
-            logger.info(f"Connected to IBKR in {mode} mode on port {port}")
+            self.connection_status = f"Connected ({mode}) to {connect_host}:{connect_port}"
+            logger.info(f"Connected to IBKR in {mode} mode at {connect_host}:{connect_port}")
             return True
         except Exception as e:
             self.connected = False
             self.connection_status = f"Error: {str(e)}"
-            logger.error(f"Failed to connect to IBKR: {e}")
+            logger.error(f"Failed to connect to IBKR at {connect_host}:{connect_port}: {e}")
             return False
     
     def disconnect(self):
