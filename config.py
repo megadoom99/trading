@@ -10,6 +10,7 @@ class IBKRConfig:
     host: str = os.getenv('IBKR_HOST', '127.0.0.1')
     paper_port: int = int(os.getenv('IBKR_PAPER_PORT', '7497'))
     live_port: int = int(os.getenv('IBKR_LIVE_PORT', '7496'))
+    gateway_port: int = int(os.getenv('IBKR_GATEWAY_PORT', '4002'))
     client_id: int = int(os.getenv('IBKR_CLIENT_ID', '1'))
     
 @dataclass

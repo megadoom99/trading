@@ -214,23 +214,64 @@ def render_sidebar():
         
         if connection_status['connected']:
             st.success(f"✅ {connection_status['status']}")
+            st.caption(f"Port: {st.session_state.get('selected_port', 'N/A')}")
             if st.button("Disconnect", use_container_width=True):
                 st.session_state.ibkr.disconnect()
                 st.rerun()
         else:
             st.error("❌ Disconnected")
+            
+            port_options = {
+                "TWS Paper (7497)": 7497,
+                "TWS Live (7496)": 7496,
+                "IB Gateway (4002)": 4002
+            }
+            
+            selected_port_label = st.selectbox(
+                "Connection Type:",
+                options=list(port_options.keys()),
+                index=0 if st.session_state.paper_mode else 1,
+                key="port_selector"
+            )
+            
+            selected_port = port_options[selected_port_label]
+            st.session_state.selected_port = selected_port
+            
             if st.button("Connect to IBKR", use_container_width=True):
                 user_settings = st.session_state.auth_mgr.get_user_settings(st.session_state.user['id']) if st.session_state.user else {}
                 host = user_settings.get('ibkr_host', '127.0.0.1')
-                port = user_settings.get('ibkr_port', 7497)
                 
-                success = st.session_state.ibkr.connect(paper_mode=st.session_state.paper_mode, host=host, port=port)
+                success = st.session_state.ibkr.connect(paper_mode=st.session_state.paper_mode, host=host, port=selected_port)
                 
                 if success:
                     st.success("Connected successfully!")
                     st.rerun()
                 else:
-                    st.error(f"Connection failed to {host}:{port}. Ensure TWS/IB Gateway is running and API is enabled.")
+                    st.error(f"Connection failed to {host}:{selected_port}. Ensure TWS/IB Gateway is running and API is enabled.")
+            
+            with st.expander("⚙️ IB Gateway Setup Guide"):
+                st.markdown("""
+                **Recommended IB Gateway Settings:**
+                
+                1. **API Settings** (Edit > Global Configuration > API > Settings):
+                   - ✅ Download open orders on connection
+                   - ✅ Include virtual FX positions
+                   - ✅ Maintain and resubmit orders on reconnection
+                   - ❌ **Uncheck "Read-Only API"** (required for trading)
+                   - Socket port: **4002** (for Gateway)
+                   
+                2. **Connection**:
+                   - ✅ Allow connections from localhost only (security)
+                   - Add **127.0.0.1** to trusted IPs
+                
+                3. **API Encoding**:
+                   - Use ASCII 7 (Python, Java compatible)
+                
+                **Port Reference:**
+                - TWS Paper: 7497
+                - TWS Live: 7496
+                - Gateway: 4002 (default)
+                """)
         
         st.markdown("---")
         st.subheader("Agent Controls")
@@ -1337,6 +1378,21 @@ def main():
     initialize_components()
     
     st.title("📈 Interactive Brokers Trading Platform")
+    
+    if st.session_state.ibkr.read_only_mode:
+        st.error("""
+        🚫 **Read-Only API Mode Detected**
+        
+        Your IB Gateway/TWS is configured in Read-Only mode. Trading orders cannot be placed.
+        
+        **To fix this:**
+        1. Open IB Gateway or TWS
+        2. Go to **Edit > Global Configuration > API > Settings**
+        3. **Uncheck** "Read-Only API"
+        4. Click **OK** and reconnect
+        
+        You can still view market data, positions, and account information.
+        """)
     
     st_autorefresh(interval=5000, key="data_refresh")
     

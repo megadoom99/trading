@@ -17,10 +17,12 @@ class IBKRManager:
         self.is_paper_mode = True
         self.connected = False
         self.connection_status = "Disconnected"
+        self.read_only_mode = False
         
     def connect(self, paper_mode: bool = True, host: str = None, port: int = None):
         try:
             self.is_paper_mode = paper_mode
+            self.read_only_mode = False
             
             connect_host = host if host else self.host
             if port:
@@ -50,6 +52,7 @@ class IBKRManager:
             self.ib.disconnect()
             self.connected = False
             self.connection_status = "Disconnected"
+            self.read_only_mode = False
             logger.info("Disconnected from IBKR")
     
     def get_connection_status(self) -> Dict[str, Any]:
@@ -183,6 +186,8 @@ class IBKRManager:
             
             trade = self.ib.placeOrder(contract, order)
             
+            self.read_only_mode = False
+            
             return {
                 'order_id': trade.order.orderId,
                 'symbol': symbol,
@@ -193,6 +198,10 @@ class IBKRManager:
                 'trade': trade
             }
         except Exception as e:
+            error_msg = str(e).lower()
+            if 'read-only' in error_msg or 'not allowed' in error_msg or 'permission' in error_msg:
+                self.read_only_mode = True
+                logger.warning("Read-Only API mode detected - orders cannot be placed")
             logger.error(f"Error placing order: {e}")
             return None
     

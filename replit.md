@@ -87,7 +87,17 @@ FINNHUB_API_KEY=your_key_here
 IBKR_HOST=127.0.0.1
 IBKR_PAPER_PORT=7497
 IBKR_LIVE_PORT=7496
+IBKR_GATEWAY_PORT=4002
 ```
+
+### IB Gateway/TWS Configuration
+**Important:** Ensure the following settings in IB Gateway/TWS:
+1. Go to **Edit > Global Configuration > API > Settings**
+2. **Uncheck "Read-Only API"** - Required for placing trades
+3. Set socket port to **4002** (Gateway) or **7497** (TWS Paper) or **7496** (TWS Live)
+4. Enable "Download open orders on connection"
+5. Enable "Maintain and resubmit orders on reconnection"
+6. Allow connections from localhost (127.0.0.1)
 
 ## Running the Application
 The application is configured to run automatically on Replit. Access it at the webview URL.
